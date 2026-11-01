@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radiation reaction, three ways — a toy collision simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Spectral:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+:root{
+  --bg:#EDF1F4; --panel:#FFFFFF; --ink:#18212B; --muted:#5A6676; --line:#CDD5DE;
+  --laser:#A3122F; --classical:#D1495B; --qc:#2563A8; --qs:#7B3FB8; --initial:#8E99A8;
+  --zone1:#E3EAF0; --zone2:#DCE6F3; --zone3:#E9E0F4;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+    --laser:#F0506E; --classical:#F27084; --qc:#5C9BE6; --qs:#B183EC; --initial:#7C8796;
+    --zone1:#1C2631; --zone2:#1A2A3D; --zone3:#271F38;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+  --laser:#F0506E; --classical:#F27084; --qc:#5C9BE6; --qs:#B183EC; --initial:#7C8796;
+  --zone1:#1C2631; --zone2:#1A2A3D; --zone3:#271F38;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:28px 20px 56px}
+h1,h2{font-family:Spectral,Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-0.01em;margin:0}
+h1{font-size:clamp(2rem,5.5vw,3.3rem);line-height:1.05;max-width:16ch}
+h2{font-size:1.35rem;line-height:1.2;margin-bottom:.4rem}
+.lede{max-width:62ch;color:var(--muted);margin:14px 0 0}
+.lede a,.notes a{color:var(--qc)}
+.keyline{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;font-size:.95rem}
+.keyline li{display:flex;align-items:center;gap:7px}
+.sw{width:22px;height:4px;border-radius:2px;display:inline-block}
+.sw.dash{background:repeating-linear-gradient(90deg,var(--initial) 0 5px,transparent 5px 8px)!important}
+
+/* gauge: the one bold element */
+.gauge{margin:30px 0 8px;background:var(--panel);border-radius:14px;padding:18px 18px 12px}
+.gauge-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.eta-read{font-family:Spectral,Georgia,serif;font-size:clamp(2.2rem,6vw,3rem);line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.eta-read small{font-family:"Atkinson Hyperlegible",sans-serif;font-size:1rem;font-weight:400;color:var(--muted);margin-left:8px}
+.regime{font-size:1rem;color:var(--muted);max-width:40ch}
+#gaugeSvg{width:100%;height:96px;display:block;margin-top:8px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;margin-top:14px}
+.plots{display:grid;gap:20px;min-width:0}
+.card{background:var(--panel);border-radius:14px;padding:18px 16px 10px;min-width:0}
+.card p.cap{margin:0 0 4px;color:var(--muted);font-size:.95rem;max-width:62ch}
+.plot{width:100%;height:340px}
+.controls{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--panel);border-radius:14px;padding:18px}
+.ctrl{margin:0 0 16px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:.95rem}
+.ctrl output{font-weight:400;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ctrl .hint{font-size:.82rem;color:var(--muted);margin:2px 0 0}
+input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--qc);height:28px}
+#a0{accent-color:var(--laser)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+button{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--qc);outline-offset:2px}
+.toggles{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.toggles button{display:flex;align-items:center;gap:7px}
+.toggles button[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+.status{font-size:.85rem;color:var(--muted);min-height:1.3em;margin:0}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem;margin:4px 0 8px}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:700;color:var(--muted);font-size:.85rem}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px}
+.notes ul{padding-left:1.1em;margin:.4em 0 0}
+.notes li{margin:.35em 0;max-width:60ch}
+details summary{cursor:pointer;font-weight:700}
+.back{display:inline-block;font-size:.95rem;font-weight:700;color:var(--muted);text-decoration:none;margin:0 0 14px}
+.back:hover{color:var(--ink)}
+footer{margin-top:28px;color:var(--muted);font-size:.9rem;max-width:70ch}
+@media (max-width:860px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .controls{position:static;order:-1}
+  .plot{height:300px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="back" href="index.html">← All pages</a>
+  <h1>Radiation reaction, three ways</h1>
+  <p class="lede">An electron beam crashes head-on into an intense laser pulse, wiggles, radiates gamma rays, and slows down. How much it slows depends on whether you describe the radiation classically or quantum mechanically. Move the sliders to see the three models used in <a href="https://doi.org/10.1038/s41467-025-67918-8">Los et al., <i>Nature Communications</i> (2026)</a> disagree.</p>
+  <ul class="keyline" aria-label="Line colours">
+    <li><span class="sw dash"></span>Beam before collision</li>
+    <li><span class="sw" style="background:var(--classical)"></span>Classical</li>
+    <li><span class="sw" style="background:var(--qc)"></span>Quantum-continuous</li>
+    <li><span class="sw" style="background:var(--qs)"></span>Quantum-stochastic</li>
+  </ul>
+</header>
+
+<section class="gauge" aria-label="Quantum parameter">
+  <div class="gauge-top">
+    <div class="eta-read" id="etaRead">η = 0.00<small>peak quantum parameter</small></div>
+    <p class="regime" id="regimeText"></p>
+  </div>
+  <svg id="gaugeSvg" role="img" aria-label="Position of peak eta on a logarithmic scale"></svg>
+</section>
+
+<div class="grid">
+  <div class="plots">
+    <section class="card">
+      <h2>Electron energy after the collision</h2>
+      <p class="cap">Each curve has the same area. A shift left means energy lost to radiation; a wider curve means electrons ended up with different energies.</p>
+      <div id="ePlot" class="plot"></div>
+      <div class="tablewrap"><table id="statTable" aria-label="Summary statistics"></table></div>
+    </section>
+    <section class="card">
+      <h2>Where the radiated energy goes</h2>
+      <p class="cap">Energy carried by gamma-ray photons, per electron, against photon energy. Quantum models can’t emit a photon more energetic than the electron; the classical one can.</p>
+      <div id="pPlot" class="plot"></div>
+    </section>
+  </div>
+
+  <aside class="controls" aria-label="Collision settings">
+    <div class="presets" role="group" aria-label="Presets">
+      <button data-preset="exp">Like the experiment</button>
+      <button data-preset="classical">Nearly classical</button>
+      <button data-preset="deep">Deep quantum</button>
+      <button data-preset="misaligned">Misaligned</button>
+    </div>
+    <div class="ctrl"><label for="a0">Laser strength a₀ <output id="a0o"></output></label>
+      <input id="a0" type="range" min="1" max="60" step="0.5" value="15">
+      <p class="hint">Normalised field amplitude at focus.</p></div>
+    <div class="ctrl"><label for="E0">Beam energy <output id="E0o"></output></label>
+      <input id="E0" type="range" min="100" max="3000" step="10" value="800"></div>
+    <div class="ctrl"><label for="spread">Energy spread <output id="spreado"></output></label>
+      <input id="spread" type="range" min="1" max="20" step="0.5" value="5"></div>
+    <div class="ctrl"><label for="tau">Pulse duration <output id="tauo"></output></label>
+      <input id="tau" type="range" min="15" max="120" step="1" value="45"></div>
+    <div class="ctrl"><label for="overlap">Beam size vs laser spot <output id="overlapo"></output></label>
+      <input id="overlap" type="range" min="0" max="1.2" step="0.05" value="0">
+      <p class="hint">0 means every electron meets the peak field. Larger values spread the field electrons feel.</p></div>
+    <div class="toggles" role="group" aria-label="Show models">
+      <button aria-pressed="true" data-model="cl"><span class="sw" style="background:var(--classical)"></span>Classical</button>
+      <button aria-pressed="true" data-model="qc"><span class="sw" style="background:var(--qc)"></span>Q-continuous</button>
+      <button aria-pressed="true" data-model="qs"><span class="sw" style="background:var(--qs)"></span>Q-stochastic</button>
+    </div>
+    <p class="status" id="status" aria-live="polite">Building emission tables…</p>
+  </aside>
+</div>
+
+<div class="notes">
+  <section class="card">
+    <h2>Things to try</h2>
+    <ul>
+      <li>Pick <b>Nearly classical</b>. All three curves sit on top of each other: at low η, quantum corrections are tiny.</li>
+      <li>Pick <b>Deep quantum</b>. Classical radiation reaction overshoots badly, and the stochastic model spreads the beam out while the continuous ones squeeze it.</li>
+      <li>Pick <b>Misaligned</b>. Now every model broadens the beam, because electrons meet different field strengths. This is why the experiment couldn’t prove the broadening came from quantum randomness.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>How the three models differ</h2>
+    <ul>
+      <li><b>Classical</b> (Landau–Lifshitz): smooth, continuous energy loss, with no cap on photon energy.</li>
+      <li><b>Quantum-continuous</b>: still smooth, but the loss rate is reduced by the Gaunt factor g(η), matching the average quantum loss.</li>
+      <li><b>Quantum-stochastic</b>: electrons emit discrete photons at random times, each taking a random share of their energy.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>What this toy leaves out</h2>
+    <details>
+      <summary>Simplifications</summary>
+      <ul>
+        <li>Plane-wave, linearly polarised, Gaussian pulse at 0.8 μm, met exactly head-on at focus; no focusing geometry or timing offset.</li>
+        <li>Emission uses the locally constant field approximation, with the field strength resolved through each laser cycle.</li>
+        <li>Transverse misalignment is modelled by giving each electron a reduced peak field, a₀·exp(−r²/w₀²).</li>
+        <li>No pair production, no electron deflection, no detector response. This is not the authors’ simulation code, and it won’t reproduce their fitted numbers.</li>
+      </ul>
+    </details>
+  </section>
+</div>
+
+<footer>Toy model built to accompany E. E. Los et al., “Observation of quantum effects on radiation reaction in strong fields”, <i>Nat. Commun.</i> <b>17</b>, 1157 (2026). Electron spectra use 1,500 simulated electrons; the stochastic curve is Monte Carlo, so it has some noise.</footer>
+</div>
+
+<script>
+/* =================== PHYSICS: emission tables =================== */
+// ---------- Toy radiation-reaction physics engine ----------
+// Units: time in fs, energy in units of m_e c^2 (gamma), photon energies as fraction f of electron energy.
+const ALPHA = 1/137.035999;
+const MC2_MEV = 0.51099895;
+const OMEGA_C = 7.7634407e20 * 1e-15;      // m c^2 / hbar in fs^-1
+const HBAR_OMEGA_L = 1.5498 / 0.51099895e6; // hbar*omega_L / m c^2 for 0.8 um
+const LAMBDA_UM = 0.8;
+const PERIOD_FS = LAMBDA_UM * 1e-6 / 2.99792458e8 * 1e15; // 2.67 fs
+
+// --- Bessel-function tables: K_{2/3}(xi) and Int_xi^inf K_{1/3}(x) dx ---
+function besselTables(){
+  const n = 700, lo = Math.log(1e-9), hi = Math.log(120);
+  const lx = new Float64Array(n), lK = new Float64Array(n), lI = new Float64Array(n);
+  for (let i=0;i<n;i++){
+    const l = lo + (hi-lo)*i/(n-1), x = Math.exp(l);
+    const T = Math.acosh(Math.max(60/x, 1.0001)) + 0.5;
+    const m = 2000, h = T/m;
+    let sK=0, sI=0;
+    for (let j=0;j<=m;j++){
+      const t=j*h, ch=Math.cosh(t), e=Math.exp(-x*ch);
+      const w = (j===0||j===m)?1:(j%2?4:2);
+      sK += w*e*Math.cosh(2*t/3);
+      sI += w*e*Math.cosh(t/3)/ch;
+    }
+    lx[i]=l; lK[i]=Math.log(sK*h/3); lI[i]=Math.log(sI*h/3);
+  }
+  const interp=(arr,x)=>{
+    if (x>=120) return 0;
+    const l=Math.log(Math.max(x,1e-9)), p=(l-lo)/(hi-lo)*(n-1);
+    const i=Math.min(n-2,Math.max(0,Math.floor(p))), r=p-i;
+    return Math.exp(arr[i]*(1-r)+arr[i+1]*r);
+  };
+  return { K23:x=>interp(lK,x), IK13:x=>interp(lI,x) };
+}
+
+// Spectra (dimensionless): dN/(dt df) = ALPHA*OMEGA_C/(sqrt3*pi*gamma) * F(f)
+function buildTables(){
+  const B = besselTables();
+  const Fq = (f,eta)=>{ const xi=2*f/(3*eta*(1-f)); return (1-f+1/(1-f))*B.K23(xi) - B.IK13(xi); };
+  const Fc = xi => 2*B.K23(xi) - B.IK13(xi); // classical, xi = 2f/(3eta)
+
+  // eta grid
+  const NE=160, eLo=Math.log(1e-5), eHi=Math.log(20);
+  const NY=300;
+  const etaL=new Float64Array(NE), rate=new Float64Array(NE), gaunt=new Float64Array(NE);
+  const cdf=[], ygrid=[];
+  // energy-spectrum shapes on log10(f) bins
+  const DB=0.05, FB_LO=-14; const NFB=Math.round(-FB_LO/DB);
+  const qShape=[];
+  const S3P = Math.sqrt(3)*Math.PI;
+  for (let k=0;k<NE;k++){
+    const le=eLo+(eHi-eLo)*k/(NE-1), eta=Math.exp(le); etaL[k]=le;
+    const y0=Math.log(eta*1e-7), y1=Math.log(150*eta), dy=(y1-y0)/(NY-1);
+    const ys=new Float64Array(NY), c=new Float64Array(NY), shp=new Float64Array(NFB);
+    let N=0, P=0, prev=0;
+    for (let j=0;j<NY;j++){
+      const y=y0+j*dy, f=1/(1+Math.exp(-y)), jac=f*(1-f);
+      const v=Math.max(Fq(f,eta),0)*jac;
+      if (j>0){ N += 0.5*(v+prev)*dy; }
+      prev=v; ys[j]=y; c[j]=N;
+      P += v*f*dy;
+      const b=Math.floor((Math.log10(f)-FB_LO)/DB);
+      if (b>=0 && b<NFB) shp[b]+=v*f*dy;
+    }
+    rate[k]=N; // times ALPHA*OMEGA_C/(S3P*gamma)
+    // classical power in same units: (2/3) eta^2 * S3P  (since prefactor/gamma * gamma)
+    gaunt[k]=P/((2/3)*eta*eta*S3P);
+    for (let b=0;b<NFB;b++) shp[b]/=P;
+    for (let j=0;j<NY;j++) c[j]/=N;
+    cdf.push(c); ygrid.push(ys); qShape.push(shp);
+  }
+  // classical energy shape over log10(x), x=f/eta
+  const NX=600, xL=-9, xH=3; const cShape=new Float64Array(NFB); let Pc=0;
+  const cRaw=[];
+  for (let j=0;j<NX;j++){
+    const lx=xL+(xH-xL)*j/(NX-1), x=Math.pow(10,lx), dlx=(xH-xL)/(NX-1);
+    const v=Fc(2*x/3)*x*x*Math.LN10*dlx; Pc+=v; cRaw.push([lx,v]);
+  }
+  // shape indexed by log10(x) bins with origin at x=1 offset; store with same DB, range [-9,3]
+  const CB_LO=-9, NCB=Math.round((3-CB_LO)/DB); const cShp=new Float64Array(NCB);
+  for (const [lx,v] of cRaw){ const b=Math.floor((lx-CB_LO)/DB); if(b>=0&&b<NCB) cShp[b]+=v/Pc; }
+  const classicalCheck = Pc/((2/3)*S3P);
+  return {etaL,rate,gaunt,cdf,ygrid,qShape,cShp,CB_LO,DB,FB_LO,NE,eLo,eHi,classicalCheck};
+}
+
+
+
+/* =================== PHYSICS: collision =================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function gauss(r){let u=0,v=0;while(u===0)u=r();v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+// p: {E0 (MeV), spread (fractional rms), a0, tau (fs, intensity FWHM), overlap (sigma_r/w0), N, seed}
+function simulate(p,T,C){
+  const {ALPHA,OMEGA_C,HBAR_OMEGA_L,PERIOD_FS,MC2_MEV}=C;
+  const rng=mulberry32(p.seed||7);
+  const N=p.N||2000;
+  const S3P=Math.sqrt(3)*Math.PI;
+  const kE=2*HBAR_OMEGA_L;                     // eta = kE * gamma * |a|
+  const Acl=(2/3)*ALPHA*OMEGA_C;              // dgamma/dt = -Acl*eta^2*g
+  const Rq=ALPHA*OMEGA_C/S3P;                 // rate = Rq*Ftilde(eta)/gamma
+  // electron sees intensity FWHM tau/2 (head-on), field oscillates with period PERIOD/2
+  const tauE=p.tau/2, tW=1.6*tauE;
+  const tPer=PERIOD_FS/2;
+  // initial electrons
+  const g0=new Float64Array(N), aEff=new Float64Array(N);
+  const gamma0=p.E0/MC2_MEV;
+  for(let i=0;i<N;i++){
+    g0[i]=Math.max(gamma0*(1+p.spread*gauss(rng)),10);
+    const sx=p.overlap*gauss(rng), sy=p.overlap*gauss(rng);
+    aEff[i]=p.a0*Math.exp(-(sx*sx+sy*sy));
+  }
+  // timestep: resolve the field cycle and keep emission probability small
+  const gMax=gamma0*(1+4*p.spread), etaMax=kE*gMax*p.a0;
+  const Wmax=Rq*lookupRate(T,etaMax)/gMax*1.3;
+  let dt=Math.min(tPer/16, 0.07/Math.max(Wmax,1e-9));
+  const nS=Math.ceil(2*tW/dt); dt=2*tW/nS;
+  const env=new Float64Array(nS), osc=new Float64Array(nS);
+  for(let s=0;s<nS;s++){const t=-tW+(s+0.5)*dt;
+    env[s]=Math.exp(-2*Math.LN2*(t/tauE)**2);           // field envelope (intensity FWHM tauE)
+    osc[s]=Math.abs(Math.cos(2*Math.PI*t/tPer));}
+  const gC=Float64Array.from(g0), gQ=Float64Array.from(g0), gS=Float64Array.from(g0);
+  // photon spectra: energy per electron, binned in log10(E_gamma/MeV)
+  const PB_LO=-2, PB_HI=4.5, DB=T.DB, NPB=Math.round((PB_HI-PB_LO)/DB);
+  const phC=new Float64Array(NPB), phQ=new Float64Array(NPB), phS=new Float64Array(NPB);
+  const nSample=Math.min(N,150), stride=Math.max(1,Math.round(nS/400));
+  const addShape=(arr,shape,lo,offset,E)=>{ // shape bins at log10 = lo + b*DB, shifted by offset (log10 MeV)
+    const sh=Math.round((lo+offset-PB_LO)/DB);
+    for(let b=0;b<shape.length;b++){const v=shape[b]; if(v<1e-7) continue; const j=b+sh; if(j>=0&&j<NPB) arr[j]+=v*E;}
+  };
+  for(let i=0;i<N;i++){
+    const a=aEff[i], spec=i<nSample;
+    let gc=gC[i], gq=gQ[i], gs=gS[i], accC=0, accQ=0, accCg=0, accQg=0, accQe=0;
+    for(let s=0;s<nS;s++){
+      const af=a*env[s]*osc[s]; if(af<1e-4) continue;
+      // classical (Landau-Lifshitz leading term)
+      let eta=kE*gc*af; let dE=Acl*eta*eta*dt; 
+      if(spec){accC+=dE; if((s%stride)===0||s===nS-1){ if(accC>0){addShape(phC,T.cShp,T.CB_LO,Math.log10(Math.max(eta,1e-12)*gc*MC2_MEV),accC*MC2_MEV);} accC=0;}}
+      gc-=dE; if(gc<1) gc=1;
+      // quantum-continuous (Gaunt-corrected)
+      eta=kE*gq*af; const k=etaIdx(T,eta); dE=Acl*eta*eta*gauntAt(T,k)*dt;
+      if(spec){accQ+=dE; if((s%stride)===0||s===nS-1){ if(accQ>0){addShape(phQ,T.qShape[k.i],T.FB_LO,Math.log10(gq*MC2_MEV),accQ*MC2_MEV);} accQ=0;}}
+      gq-=dE; if(gq<1) gq=1;
+      // quantum-stochastic (Monte Carlo, LCFA)
+      eta=kE*gs*af; const ks=etaIdx(T,eta);
+      const pr=Rq*rateAt(T,ks)/gs*dt;
+      if(!ks.low&&rng()<pr){
+        const kk=(rng()<ks.r)?Math.min(ks.i+1,T.NE-1):ks.i;
+        const f=sampleF(T,kk,rng());
+        const Eg=f*gs; gs-=Eg;
+        const j=Math.floor((Math.log10(Eg*MC2_MEV)-PB_LO)/DB); if(j>=0&&j<NPB) phS[j]+=Eg*MC2_MEV;
+      }
+    }
+    gC[i]=gc; gQ[i]=gq; gS[i]=gs;
+  }
+  for(let j=0;j<NPB;j++){phC[j]/=nSample*DB; phQ[j]/=nSample*DB; phS[j]/=N*DB;}
+  const toMeV=arr=>Array.from(arr,g=>g*MC2_MEV);
+  const phX=Array.from({length:NPB},(_,j)=>Math.pow(10,PB_LO+(j+0.5)*DB));
+  return {E0:toMeV(g0),EC:toMeV(gC),EQ:toMeV(gQ),ES:toMeV(gS),phX,phC:Array.from(phC),phQ:Array.from(phQ),phS:Array.from(phS),
+          etaPeak:kE*gamma0*p.a0, steps:nS, dt};
+}
+function etaIdx(T,eta){const l=Math.log(Math.max(eta,1e-12));let p=(l-T.eLo)/(T.eHi-T.eLo)*(T.NE-1);
+  if(p<0)return{i:0,r:0,eta,low:true}; if(p>=T.NE-1)return{i:T.NE-2,r:1,eta};const i=Math.floor(p);return{i,r:p-i,eta};}
+function lerp(arr,k){ return arr[k.i]*(1-k.r)+arr[k.i+1]*k.r; }
+function gauntAt(T,k){ return k.low?1:lerp(T.gaunt,k); }
+function rateAt(T,k){ return k.low?1.4434*Math.sqrt(3)*Math.PI*k.eta:lerp(T.rate,k); }
+function lookupRate(T,eta){return rateAt(T,etaIdx(T,eta));}
+function sampleF(T,k,u){const c=T.cdf[k],y=T.ygrid[k];let lo=0,hi=c.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(c[m]<u)lo=m;else hi=m;}
+  const r=(u-c[lo])/Math.max(c[hi]-c[lo],1e-30);const yy=y[lo]+r*(y[hi]-y[lo]);return 1/(1+Math.exp(-yy));}
+
+
+/* =================== UI =================== */
+const C={ALPHA,OMEGA_C,HBAR_OMEGA_L,PERIOD_FS,MC2_MEV};
+let TABLES=null;
+const $=id=>document.getElementById(id);
+const sliders=['a0','E0','spread','tau','overlap'];
+const fmt={a0:v=>(+v).toFixed(1),E0:v=>v+' MeV',spread:v=>v+'%',tau:v=>v+' fs',overlap:v=>(+v).toFixed(2)};
+const PRESETS={
+  exp:{a0:10,E0:860,spread:4,tau:45,overlap:0.15},
+  classical:{a0:5,E0:200,spread:5,tau:45,overlap:0},
+  deep:{a0:40,E0:2000,spread:3,tau:45,overlap:0},
+  misaligned:{a0:20,E0:860,spread:4,tau:45,overlap:0.7}
+};
+const show={cl:true,qc:true,qs:true};
+
+function css(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
+function params(){const p={};for(const s of sliders)p[s]=+$(s).value;p.spread/=100;return p;}
+function updateLabels(){for(const s of sliders)$(s+'o').textContent=fmt[s]($(s).value);}
+
+function etaPeak(){const p=params();return 2*HBAR_OMEGA_L*(p.E0/MC2_MEV)*p.a0;}
+
+function drawGauge(){
+  const eta=etaPeak();
+  const svg=$('gaugeSvg'), W=svg.clientWidth||600, H=96;
+  const lo=Math.log10(1e-3), hi=Math.log10(3);
+  const x=v=>12+(W-24)*(Math.log10(v)-lo)/(hi-lo);
+  const zones=[[1e-3,0.01,'--zone1','Nearly classical'],[0.01,0.3,'--zone2','Quantum corrections matter'],[0.3,3,'--zone3','Strongly quantum']];
+  let s=`<rect x="0" y="0" width="${W}" height="${H}" fill="none"/>`;
+  for(const [a,b,c,l] of zones){
+    s+=`<rect x="${x(a)}" y="22" width="${x(b)-x(a)}" height="30" fill="var(${c})"/>`;
+    if(x(b)-x(a)>70) s+=`<text x="${x(a)+8}" y="42" font-size="12" fill="var(--muted)">${l}</text>`;
+  }
+  // experiment band
+  s+=`<rect x="${x(0.05)}" y="18" width="${x(0.1)-x(0.05)}" height="38" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+  s+=`<text x="${(x(0.05)+x(0.1))/2}" y="13" font-size="11.5" text-anchor="middle" fill="var(--ink)">experiment</text>`;
+  for(const t of [0.001,0.01,0.1,1]){s+=`<line x1="${x(t)}" x2="${x(t)}" y1="52" y2="58" stroke="var(--muted)"/><text x="${x(t)}" y="72" font-size="12" text-anchor="middle" fill="var(--muted)">${t}</text>`;}
+  const ex=x(Math.min(Math.max(eta,1e-3),3));
+  s+=`<line x1="${ex}" x2="${ex}" y1="16" y2="58" stroke="var(--laser)" stroke-width="3"/><path d="M${ex-7},84 L${ex+7},84 L${ex},74 Z" fill="var(--laser)"/>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=s;
+  $('etaRead').innerHTML=`η = ${eta<0.01?eta.toFixed(4):eta.toFixed(3)}<small>peak quantum parameter</small>`;
+  const g=TABLES?gauntAt(TABLES,etaIdx(TABLES,eta)):1;
+  $('regimeText').textContent = eta<0.01
+    ? `Quantum effects cut the energy-loss rate by only ${((1-g)*100).toFixed(1)}% here.`
+    : `At the peak, quantum effects cut the energy-loss rate to ${(g*100).toFixed(0)}% of the classical value.`;
+}
+
+function hist(arr,lo,hi,n){const h=new Float64Array(n),w=(hi-lo)/n;for(const v of arr){const j=Math.floor((v-lo)/w);if(j>=0&&j<n)h[j]++;}
+  const x=[],y=[];for(let j=0;j<n;j++){x.push(lo+(j+.5)*w);y.push(h[j]/(arr.length*w));}
+  // light smoothing for display
+  const ys=y.map((v,j)=>j>0&&j<n-1?(y[j-1]+2*v+y[j+1])/4:v);return{x,y:ys};}
+function stats(a){let m=0;for(const v of a)m+=v;m/=a.length;let s=0;for(const v of a)s+=(v-m)**2;return{m,sd:Math.sqrt(s/a.length)};}
+
+function layout(xTitle,yTitle,xlog){
+  const ink=css('--ink'),muted=css('--muted'),line=css('--line');
+  return{margin:{l:56,r:12,t:8,b:48},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+    font:{family:'"Atkinson Hyperlegible",system-ui,sans-serif',size:13,color:ink},showlegend:false,dragmode:false,
+    hoverlabel:{font:{family:'"Atkinson Hyperlegible",system-ui,sans-serif'}},
+    xaxis:{title:{text:xTitle,standoff:6},type:xlog?'log':'linear',gridcolor:line,zeroline:false,color:muted,tickfont:{color:muted}},
+    yaxis:{title:{text:yTitle,standoff:4},gridcolor:line,zeroline:false,color:muted,tickfont:{color:muted},rangemode:'tozero'}};
+}
+const PCFG={displayModeBar:false,responsive:true,scrollZoom:false};
+let last=null;
+
+function render(r){
+  last=r;
+  const all=[...r.E0,...r.EC,...r.EQ,...r.ES];
+  let lo=Infinity,hi=-Infinity;for(const v of all){if(v<lo)lo=v;if(v>hi)hi=v;}
+  const pad=(hi-lo)*0.05; lo=Math.max(0,lo-pad); hi=hi+pad;
+  const nb=Math.max(40,Math.min(110,Math.round(Math.sqrt(r.E0.length)*2.2)));
+  const h0=hist(r.E0,lo,hi,nb),hc=hist(r.EC,lo,hi,nb),hq=hist(r.EQ,lo,hi,nb),hs=hist(r.ES,lo,hi,nb);
+  const ht='%{x:.0f} MeV<extra>%{fullData.name}</extra>';
+  const traces=[
+    {x:h0.x,y:h0.y,name:'Before',line:{color:css('--initial'),width:2,dash:'dash',shape:'spline'},fill:'tozeroy',fillcolor:'rgba(142,153,168,0.12)',hovertemplate:ht},
+    {x:hc.x,y:hc.y,name:'Classical',visible:show.cl,line:{color:css('--classical'),width:2.6,shape:'spline'},hovertemplate:ht},
+    {x:hq.x,y:hq.y,name:'Quantum-continuous',visible:show.qc,line:{color:css('--qc'),width:2.6,shape:'spline'},hovertemplate:ht},
+    {x:hs.x,y:hs.y,name:'Quantum-stochastic',visible:show.qs,line:{color:css('--qs'),width:2.6,shape:'spline'},hovertemplate:ht}];
+  Plotly.react('ePlot',traces,layout('Electron energy (MeV)','Fraction of electrons per MeV',false),PCFG);
+
+  const s0=stats(r.E0);
+  const rows=[['Before',s0,null,'--initial'],['Classical',stats(r.EC),'cl','--classical'],['Quantum-continuous',stats(r.EQ),'qc','--qc'],['Quantum-stochastic',stats(r.ES),'qs','--qs']];
+  let t='<thead><tr><th>Model</th><th>Mean energy</th><th>Energy lost</th><th>Spread (rms)</th></tr></thead><tbody>';
+  for(const [n,s,k,c] of rows){ if(k&&!show[k]) continue;
+    t+=`<tr><td><span class="sw" style="background:var(${c});width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px"></span>${n}</td><td>${s.m.toFixed(0)} MeV</td><td>${k?((1-s.m/s0.m)*100).toFixed(1)+'%':'—'}</td><td>${(s.sd/s.m*100).toFixed(1)}%</td></tr>`;}
+  $('statTable').innerHTML=t+'</tbody>';
+
+  // photon plot: trim to range with signal
+  const mx=Math.max(...r.phC,...r.phQ,...r.phS);
+  let i0=r.phX.length,i1=0;for(let j=0;j<r.phX.length;j++){if(r.phC[j]>mx*2e-3||r.phQ[j]>mx*2e-3||r.phS[j]>mx*2e-3){i0=Math.min(i0,j);i1=Math.max(i1,j);}}
+  i0=Math.max(0,i0-2); i1=Math.min(r.phX.length-1,Math.max(i1+3, r.phX.findIndex(v=>v>s0.m*1.8)));
+  const sl=a=>a.slice(i0,i1+1);
+  const pht='%{x:.3g} MeV photons<extra>%{fullData.name}</extra>';
+  const pt=[
+    {x:sl(r.phX),y:sl(r.phC),name:'Classical',visible:show.cl,line:{color:css('--classical'),width:2.6,shape:'spline'},hovertemplate:pht},
+    {x:sl(r.phX),y:sl(r.phQ),name:'Quantum-continuous',visible:show.qc,line:{color:css('--qc'),width:2.6,shape:'spline'},hovertemplate:pht},
+    {x:sl(r.phX),y:sl(r.phS),name:'Quantum-stochastic',visible:show.qs,line:{color:css('--qs'),width:2.6,shape:'spline',dash:'dot'},hovertemplate:pht}];
+  const L=layout('Photon energy (MeV)','Energy per electron, per decade (MeV)',true);
+  L.shapes=[{type:'line',x0:s0.m,x1:s0.m,yref:'paper',y0:0,y1:1,line:{color:css('--initial'),width:1.5,dash:'dash'}}];
+  L.annotations=[{x:Math.log10(s0.m),y:1,yref:'paper',text:'beam energy',showarrow:false,xanchor:'right',yanchor:'top',xshift:-4,font:{size:12,color:css('--muted')}}];
+  Plotly.react('pPlot',pt,L,PCFG);
+}
+
+let timer=null,running=false,pending=null;
+function run(N){
+  if(!TABLES) return;
+  if(running){pending=N;return;}
+  running=true;
+  const t0=performance.now();
+  const r=simulate({...params(),N,seed:11},TABLES,C);
+  render(r);
+  const ms=performance.now()-t0;
+  $('status').textContent= N<1000?'Previewing with fewer electrons…':`Simulated ${N.toLocaleString()} electrons in ${Math.round(ms)} ms.`;
+  running=false;
+  if(pending){const n=pending;pending=null;setTimeout(()=>run(n),0);}
+}
+function schedule(){ updateLabels(); drawGauge(); clearTimeout(timer); timer=setTimeout(()=>run(400),30); clearTimeout(schedule.f); schedule.f=setTimeout(()=>run(1500),350); }
+
+for(const s of sliders){$(s).addEventListener('input',schedule);}
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+  const p=PRESETS[b.dataset.preset];for(const k in p)$(k).value=p[k];schedule();}));
+document.querySelectorAll('[data-model]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.model;show[k]=!show[k];b.setAttribute('aria-pressed',show[k]);if(last)render(last);}));
+window.addEventListener('resize',()=>drawGauge());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{drawGauge();if(last)render(last);});
+
+updateLabels(); drawGauge();
+setTimeout(()=>{
+  try{ TABLES=buildTables(); drawGauge(); run(1500); }
+  catch(e){ $('status').textContent='The simulation couldn’t start: '+e.message; }
+},20);
+</script>
+</body>
+</html>

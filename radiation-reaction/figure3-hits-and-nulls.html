@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hits, nulls and five sigma — how Figure 3 finds radiation reaction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Spectral:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+:root{
+  --bg:#EDF1F4; --panel:#FFFFFF; --ink:#18212B; --muted:#5A6676; --line:#CDD5DE;
+  --hit:#C8323F; --null:#2563A8; --skip:#A8B1BD; --laser:#A3122F; --accent:#2563A8;
+  --zone1:#E3EAF0; --zone2:#DCE6F3; --zone3:#E7E0F3;
+  color-scheme: light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+    --hit:#F06470; --null:#5C9BE6; --skip:#55606E; --laser:#F0506E; --accent:#5C9BE6;
+    --zone1:#1C2631; --zone2:#1A2A3D; --zone3:#271F38; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+  --hit:#F06470; --null:#5C9BE6; --skip:#55606E; --laser:#F0506E; --accent:#5C9BE6;
+  --zone1:#1C2631; --zone2:#1A2A3D; --zone3:#271F38; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:28px 20px 56px}
+h1,h2{font-family:Spectral,Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-0.01em;margin:0}
+h1{font-size:clamp(2rem,5.5vw,3.3rem);line-height:1.05;max-width:18ch}
+h2{font-size:1.35rem;line-height:1.2;margin-bottom:.4rem}
+.lede{max-width:64ch;color:var(--muted);margin:14px 0 0}
+a{color:var(--accent)}
+.keyline{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;font-size:.95rem}
+.keyline li{display:flex;align-items:center;gap:7px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+.meter{margin:30px 0 8px;background:var(--panel);border-radius:14px;padding:18px 18px 10px}
+.meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sig{font-family:Spectral,Georgia,serif;font-size:clamp(2.2rem,6vw,3rem);line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.sig small{font-family:"Atkinson Hyperlegible",sans-serif;font-size:1rem;font-weight:400;color:var(--muted);margin-left:8px}
+.verdict{font-size:1rem;color:var(--muted);max-width:44ch;margin:0}
+#meterSvg{width:100%;height:92px;display:block;margin-top:6px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;margin-top:14px}
+.plots{display:grid;gap:20px;min-width:0}
+.card{background:var(--panel);border-radius:14px;padding:18px 16px 12px;min-width:0}
+.card p.cap{margin:0 0 6px;color:var(--muted);font-size:.95rem;max-width:64ch}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.plot{width:100%;height:320px}
+.controls{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--panel);border-radius:14px;padding:18px}
+.ctrl{margin:0 0 15px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:.95rem}
+.ctrl output{font-weight:400;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ctrl .hint{font-size:.82rem;color:var(--muted);margin:2px 0 0}
+input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--accent);height:28px}
+.group-label{font-size:.85rem;color:var(--muted);margin:4px 0 8px;font-weight:700}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+button{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.rerun{width:100%;margin-top:4px;border-color:var(--ink);font-weight:700}
+.status{font-size:.85rem;color:var(--muted);min-height:1.3em;margin:10px 0 0}
+.metricbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 0}
+.metricbar span{font-size:.95rem;color:var(--muted)}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px}
+.notes ul{padding-left:1.1em;margin:.4em 0 0}
+.notes li{margin:.35em 0;max-width:60ch}
+details summary{cursor:pointer;font-weight:700}
+.back{display:inline-block;font-size:.95rem;font-weight:700;color:var(--muted);text-decoration:none;margin:0 0 14px}
+.back:hover{color:var(--ink)}
+footer{margin-top:28px;color:var(--muted);font-size:.9rem;max-width:70ch}
+@media (max-width:860px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .controls{position:static;order:-1}
+  .plot{height:290px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="back" href="index.html">← All pages</a>
+  <h1>Hits, nulls and five sigma</h1>
+  <p class="lede">The experiment never measured an electron beam both before and after the collision. Instead it fired hundreds of shots, sorted them into <b>hits</b> (the laser met the beam) and <b>nulls</b> (it missed, or was switched off), and asked whether hits came out with less energy. This widget runs a pretend campaign so you can see how beam and alignment jitter make that question harder, the idea behind Figure 3 of <a href="https://doi.org/10.1038/s41467-025-67918-8">Los et al. (2026)</a>.</p>
+  <div class="metricbar">
+    <span>Compare shots by</span>
+    <div class="seg" role="group" aria-label="Metric">
+      <button aria-pressed="true" data-metric="E">Mean energy ⟨E⟩</button>
+      <button aria-pressed="false" data-metric="P70">Peak height P₇₀</button>
+    </div>
+  </div>
+  <ul class="keyline" aria-label="Colours">
+    <li><span class="dot" style="background:var(--hit)"></span>Hits</li>
+    <li><span class="dot" style="background:var(--null)"></span>Nulls</li>
+    <li><span class="dot" style="background:var(--skip)"></span>Ambiguous, left out</li>
+  </ul>
+</header>
+
+<section class="meter" aria-label="Statistical significance">
+  <div class="meter-top">
+    <div class="sig" id="sigRead">—</div>
+    <p class="verdict" id="verdict"></p>
+  </div>
+  <svg id="meterSvg" role="img" aria-label="Significance of the hit–null difference compared with the 3 and 5 sigma thresholds"></svg>
+</section>
+
+<div class="grid">
+  <div class="plots">
+    <section class="card">
+      <h2>Sorting shots into hits and nulls</h2>
+      <p class="cap">Every shot makes some gamma rays, even without a collision, and that background grows with beam charge and energy. A hit is a shot whose gamma signal sits well above the background line. Laser-off shots always count as nulls.</p>
+      <div id="sortPlot" class="plot"></div>
+    </section>
+    <section class="card">
+      <div class="card-head">
+        <h2 id="distTitle">How hits and nulls compare</h2>
+        <div class="seg" role="group" aria-label="Distribution view">
+          <button aria-pressed="true" data-view="raw">Every shot</button>
+          <button aria-pressed="false" data-view="boot">Bootstrapped means</button>
+        </div>
+      </div>
+      <p class="cap" id="distCap"></p>
+      <div id="distPlot" class="plot"></div>
+    </section>
+    <section class="card">
+      <h2>More gamma rays, less energy</h2>
+      <p class="cap" id="trendCap">Shots grouped by gamma yield (normalised to the background scaling). If radiation reaction is real, the brighter the hit, the more energy its electrons should have lost.</p>
+      <div id="trendPlot" class="plot"></div>
+    </section>
+  </div>
+
+  <aside class="controls" aria-label="Campaign settings">
+    <div class="presets" role="group" aria-label="Presets">
+      <button data-preset="exp">Like the experiment</button>
+      <button data-preset="few">A handful of shots</button>
+      <button data-preset="steady">Steady beam</button>
+      <button data-preset="aligned">Perfect alignment</button>
+    </div>
+    <p class="group-label">Electron beam</p>
+    <div class="ctrl"><label for="eJit">Shot-to-shot energy jitter <output id="eJito"></output></label>
+      <input id="eJit" type="range" min="0" max="15" step="0.5" value="6.5">
+      <p class="hint">How much the beam’s peak energy and spectral shape change from shot to shot.</p></div>
+    <p class="group-label">Collision</p>
+    <div class="ctrl"><label for="point">Pointing jitter <output id="pointo"></output></label>
+      <input id="point" type="range" min="0" max="5" step="0.1" value="2.5">
+      <p class="hint">Random sideways miss distance, in units of the laser spot radius w₀.</p></div>
+    <div class="ctrl"><label for="timing">Timing jitter <output id="timingo"></output></label>
+      <input id="timing" type="range" min="0" max="120" step="5" value="30">
+      <p class="hint">Moves the collision away from focus, where the laser is weaker.</p></div>
+    <div class="ctrl"><label for="a0">Laser strength a₀ at focus <output id="a0o"></output></label>
+      <input id="a0" type="range" min="2" max="30" step="0.5" value="10"></div>
+    <p class="group-label">Analysis</p>
+    <div class="ctrl"><label for="shots">Number of shots <output id="shotso"></output></label>
+      <input id="shots" type="range" min="20" max="2000" step="10" value="1300"></div>
+    <div class="ctrl"><label for="thresh">Hit threshold <output id="thresho"></output></label>
+      <input id="thresh" type="range" min="1.5" max="6" step="0.5" value="3">
+      <p class="hint">How far above background a shot must be to count as a hit.</p></div>
+    <button class="rerun" id="rerun">Rerun with new random shots</button>
+    <p class="status" id="status" aria-live="polite">Preparing the energy-loss model…</p>
+  </aside>
+</div>
+
+<div class="notes">
+  <section class="card">
+    <h2>Things to try</h2>
+    <ul>
+      <li>Pick <b>A handful of shots</b>, roughly what earlier all-optical experiments had. Even with the same physics, the difference rarely clears 3σ.</li>
+      <li>From <b>Like the experiment</b>, press <b>Rerun</b> a few times. The significance jumps around: one campaign is one draw.</li>
+      <li>Turn energy jitter up. ⟨E⟩ suffers most, because a beam that simply came out of the accelerator cooler looks like energy loss. P₇₀ holds up better.</li>
+      <li>Raise the hit threshold. Hits get fewer but cleaner, so each one shows more energy loss.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>Reading the real Figure 3</h2>
+    <ul>
+      <li>Panels a and b are the “Every shot” view: hits shifted to lower ⟨E⟩ and lower P₇₀.</li>
+      <li>Panels c and d are the “Bootstrapped means” view: the paper found the means separated by about 3σ for ⟨E⟩ and 5σ for P₇₀.</li>
+      <li>Panels e and f are the trend plot. Nulls drift slightly up with gamma yield, while hits fall, so a different process is at work in hits.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>What this toy leaves out</h2>
+    <details>
+      <summary>Simplifications</summary>
+      <ul>
+        <li>Each shot has 500 electrons drawn from a peak plus a broad low-energy tail; electrons below 300 MeV are invisible, as on the real spectrometer.</li>
+        <li>Energy loss uses the quantum-continuous model with a fitted Gaunt factor, for a 45 fs, 0.8 μm Gaussian pulse with a 2.5 μm spot. The paper’s Figure 3 doesn’t depend on which model is right.</li>
+        <li>Gamma background is log-normal noise on a fixed scaling; 30% of shots have the laser off.</li>
+        <li>Significance uses a two-sample Kolmogorov–Smirnov test and a bootstrap of the means, as in the paper. This isn’t the authors’ data or code, so the numbers are illustrative.</li>
+      </ul>
+    </details>
+  </section>
+</div>
+<footer>Toy model built to accompany E. E. Los et al., “Observation of quantum effects on radiation reaction in strong fields”, <i>Nat. Commun.</i> <b>17</b>, 1157 (2026).</footer>
+</div>
+
+<script>
+// ===== Shot-by-shot toy model of the hits-vs-nulls analysis (Fig. 3) =====
+const MC2=0.51099895, HW=1.5498/0.51099895e6, ALPHA_=1/137.036, OMC=7.7634407e20*1e-15;
+const W0=2.5, ZR=Math.PI*W0*W0/0.8; // um
+function rngF(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function nrm(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r());}
+const gaunt=e=>Math.pow(1+4.8*(1+e)*Math.log(1+1.7*e)+2.44*e*e,-2/3);
+
+// Final energy table: quantum-continuous model, head-on, 45 fs Gaussian pulse
+function buildLossTable(){
+  const NG=60, NA=97, gLo=Math.log(150/MC2), gHi=Math.log(3200/MC2), aMax=48;
+  const tab=new Float64Array(NG*NA);
+  const tauE=22.5, tW=1.7*tauE, dt=0.15, nS=Math.ceil(2*tW/dt);
+  const env2=new Float64Array(nS);
+  for(let s=0;s<nS;s++){const t=-tW+(s+.5)*dt;env2[s]=Math.exp(-4*Math.LN2*(t/tauE)**2);}
+  const A=(2/3)*ALPHA_*OMC;
+  for(let i=0;i<NG;i++){const g0=Math.exp(gLo+(gHi-gLo)*i/(NG-1));
+    for(let j=0;j<NA;j++){const a=aMax*j/(NA-1);let g=g0;
+      for(let s=0;s<nS;s++){const eta=2*HW*g*a*Math.sqrt(env2[s]/2);g-=A*eta*eta*gaunt(eta)*dt;if(g<1){g=1;break;}}
+      tab[i*NA+j]=g/g0;}}
+  return {tab,NG,NA,gLo,gHi,aMax};
+}
+function finalE(L,E,a){ // E in MeV
+  const g=E/MC2; let pi=(Math.log(g)-L.gLo)/(L.gHi-L.gLo)*(L.NG-1); pi=Math.min(L.NG-1.001,Math.max(0,pi));
+  let pj=a/L.aMax*(L.NA-1); pj=Math.min(L.NA-1.001,Math.max(0,pj));
+  const i=Math.floor(pi),j=Math.floor(pj),r=pi-i,s=pj-j,T=L.tab,N=L.NA;
+  const f=T[i*N+j]*(1-r)*(1-s)+T[(i+1)*N+j]*r*(1-s)+T[i*N+j+1]*(1-r)*s+T[(i+1)*N+j+1]*r*s;
+  return E*f;
+}
+// p: {shots, eJit(frac), point(w0 units), timing(fs), a0, thresh(sigma), seed}
+function runCampaign(p,L){
+  const r=rngF(p.seed||1), NE=500, BW=25, EMIN=300;
+  const out=[];
+  const BKG_SD=0.15, KAPPA=0.08, beam=0.6;
+  for(let k=0;k<p.shots;k++){
+    const laserOn=r()>0.3;
+    const Ep=860*(1+p.eJit*nrm(r)), pf=Math.min(0.5,Math.max(0.05,0.22*(1+(0.1+3*p.eJit)*nrm(r))));
+    const Q=140*Math.exp(0.2*nrm(r));
+    const dx=p.point*nrm(r), dy=p.point*nrm(r), z=0.15*p.timing*nrm(r);
+    const wz=Math.sqrt(1+(z/ZR)**2), az=p.a0/wz;
+    const pre=[],post=[]; let lossSum=0;
+    for(let n=0;n<NE;n++){
+      let E;
+      if(r()<pf) E=Ep*(1+0.05*nrm(r));
+      else { E=EMIN*0.7+(Ep-EMIN*0.7)*Math.sqrt(r()); }
+      let Ef=E;
+      if(laserOn){const x=dx+beam*nrm(r), y=dy+beam*nrm(r); const a=az*Math.exp(-(x*x+y*y)/(wz*wz)); if(a>0.05) Ef=finalE(L,E,a);}
+      lossSum+=E-Ef; pre.push(E); post.push(Ef);
+    }
+    const meas=post.filter(e=>e>=EMIN); // spectrometer cutoff
+    const st=specStats(meas,BW);
+    const preM=pre.filter(e=>e>=EMIN); let g2=0; for(const e of preM) g2+=(e/1000)**2; g2/=preM.length;
+    const yIcs=KAPPA*(lossSum/NE)/g2;
+    const yN=Math.exp(BKG_SD*nrm(r)-BKG_SD*BKG_SD/2)+yIcs; // normalised yield, bkg mean 1
+    out.push({laserOn,E:st.mean,P70:st.p70,y:yN,Qg2:Q*g2,a_eff:az*Math.exp(-(dx*dx+dy*dy)/(wz*wz))});
+  }
+  const sd=BKG_SD;
+  for(const s of out){ const dev=Math.log(s.y)/sd; // log-normal background: classify in sigma of log
+    s.cls = !s.laserOn||dev<1 ? 'null' : (dev>p.thresh?'hit':'skip'); }
+  return out;
+}
+function specStats(arr,BW){
+  const n=arr.length; if(!n) return {mean:NaN,p70:NaN};
+  let m=0; for(const e of arr)m+=e; m/=n;
+  const s=[...arr].sort((a,b)=>a-b), e70=s[Math.floor(0.7*(n-1))];
+  const lo=300, nb=Math.ceil((s[n-1]-lo)/BW)+1, h=new Float64Array(nb);
+  for(const e of arr){h[Math.floor((e-lo)/BW)]++;}
+  let pk=0; for(let b=0;b<nb;b++){const c=lo+(b+.5)*BW; if(c>=e70) pk=Math.max(pk,h[b]/(n*BW/1000));}
+  return {mean:m,p70:pk};
+}
+// ---- statistics ----
+function ks(a,b){const A=[...a].sort((x,y)=>x-y),B=[...b].sort((x,y)=>x-y);let i=0,j=0,d=0;
+  while(i<A.length&&j<B.length){const v=Math.min(A[i],B[j]);while(i<A.length&&A[i]<=v)i++;while(j<B.length&&B[j]<=v)j++;d=Math.max(d,Math.abs(i/A.length-j/B.length));}
+  const ne=A.length*B.length/(A.length+B.length), lam=(Math.sqrt(ne)+0.12+0.11/Math.sqrt(ne))*d;
+  let p=0; for(let k=1;k<100;k++){p+=2*(k%2?1:-1)*Math.exp(-2*k*k*lam*lam);} p=Math.min(1,Math.max(p,0));
+  const logp = lam>3 ? Math.log(2)-2*lam*lam : Math.log(Math.max(p,1e-300));
+  return {d,logp,sigma:sigmaFromLogP(logp)};
+}
+function sigmaFromLogP(logp){ // two-sided: solve log(2*Q(x)) = logp
+  if(logp>=0) return 0;
+  const lQ=x=>{ if(x<5){return Math.log(0.5*erfc(x/Math.SQRT2));} return -x*x/2-Math.log(x*Math.sqrt(2*Math.PI))+Math.log(1-1/(x*x)+3/(x**4)); };
+  let lo=0,hi=60; for(let it=0;it<80;it++){const m=(lo+hi)/2; if(Math.log(2)+lQ(m)>logp) lo=m; else hi=m;} return (lo+hi)/2;
+}
+function erfc(x){const z=Math.abs(x),t=1/(1+0.5*z);const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));return x>=0?r:2-r;}
+function bootMeans(arr,nb,r){const n=arr.length,out=new Float64Array(nb);for(let b=0;b<nb;b++){let s=0;for(let i=0;i<n;i++)s+=arr[Math.floor(r()*n)];out[b]=s/n;}return out;}
+function msd(a){let m=0;for(const v of a)m+=v;m/=a.length;let s=0;for(const v of a)s+=(v-m)**2;return{m,sd:Math.sqrt(s/Math.max(1,a.length-1))};}
+
+
+/* =================== UI =================== */
+const $=id=>document.getElementById(id);
+const sliders=['eJit','point','timing','a0','shots','thresh'];
+const fmt={eJit:v=>v+'%',point:v=>(+v).toFixed(1)+' w₀',timing:v=>v+' fs',a0:v=>(+v).toFixed(1),shots:v=>(+v).toLocaleString(),thresh:v=>(+v).toFixed(1)+'σ'};
+const PRESETS={
+  exp:{eJit:6.5,point:2.5,timing:30,a0:10,shots:1300,thresh:3},
+  few:{eJit:6.5,point:2.5,timing:30,a0:10,shots:30,thresh:3},
+  steady:{eJit:1,point:2.5,timing:30,a0:10,shots:1300,thresh:3},
+  aligned:{eJit:6.5,point:0.2,timing:5,a0:10,shots:1300,thresh:3}
+};
+const META={E:{name:'mean energy ⟨E⟩',axis:'Mean electron energy ⟨E⟩ (MeV)',fmt:v=>v.toFixed(0)+' MeV',bin:8},
+            P70:{name:'peak height P₇₀',axis:'Peak height above 70th percentile, P₇₀ (GeV⁻¹)',fmt:v=>v.toFixed(2)+' GeV⁻¹',bin:0.25}};
+let LOSS=null, shots=null, seed=1, metric='E', view='raw', stats=null;
+const BKG_SD=0.15;
+
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function rgba(hex,a){const h=hex.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+function params(){const p={};for(const s of sliders)p[s]=+$(s).value;p.eJit/=100;p.seed=seed;return p;}
+function updateLabels(){for(const s of sliders)$(s+'o').textContent=fmt[s]($(s).value);}
+function layout(xt,yt,xlog,ylog){
+  const ink=css('--ink'),muted=css('--muted'),line=css('--line');
+  return{margin:{l:58,r:12,t:8,b:50},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+    font:{family:'"Atkinson Hyperlegible",system-ui,sans-serif',size:13,color:ink},showlegend:false,dragmode:false,barmode:'overlay',
+    hoverlabel:{font:{family:'"Atkinson Hyperlegible",system-ui,sans-serif'}},
+    xaxis:{title:{text:xt,standoff:6},type:xlog?'log':'linear',gridcolor:line,zeroline:false,color:muted,tickfont:{color:muted}},
+    yaxis:{title:{text:yt,standoff:4},type:ylog?'log':'linear',gridcolor:line,zeroline:false,color:muted,tickfont:{color:muted}}};
+}
+const PCFG={displayModeBar:false,responsive:true,scrollZoom:false};
+
+function computeStats(){
+  const H=shots.filter(s=>s.cls==='hit'), N=shots.filter(s=>s.cls==='null');
+  const out={nH:H.length,nN:N.length,nSkip:shots.length-H.length-N.length};
+  const r=rngF(seed*7919+3);
+  for(const k of ['E','P70']){
+    const a=H.map(s=>s[k]).filter(Number.isFinite), b=N.map(s=>s[k]).filter(Number.isFinite);
+    if(a.length<3||b.length<3){out[k]=null;continue;}
+    const K=ks(a,b), ba=bootMeans(a,2000,r), bb=bootMeans(b,2000,r), sa=msd(ba), sb=msd(bb);
+    const bs=(sb.m-sa.m)/Math.sqrt(sa.sd**2+sb.sd**2);
+    out[k]={hits:a,nulls:b,ks:K.sigma,boot:bs,ba,bb,mH:sa.m,mN:sb.m};
+  }
+  return out;
+}
+
+function drawMeter(){
+  const svg=$('meterSvg'),W=svg.clientWidth||600,H=92;
+  const max=10, x=v=>14+(W-28)*Math.min(Math.max(v,0),max)/max;
+  const st=stats&&stats[metric];
+  let s=`<rect x="${x(0)}" y="20" width="${x(3)-x(0)}" height="34" fill="var(--zone1)"/>`+
+        `<rect x="${x(3)}" y="20" width="${x(5)-x(3)}" height="34" fill="var(--zone2)"/>`+
+        `<rect x="${x(5)}" y="20" width="${x(max)-x(5)}" height="34" fill="var(--zone3)"/>`;
+  const zl=[[0,3,'Could be chance'],[3,5,'Evidence'],[5,max,'Observation']];
+  for(const [a,b,l] of zl) if(x(b)-x(a)>64) s+=`<text x="${x(a)+8}" y="41" font-size="12" fill="var(--muted)">${l}</text>`;
+  for(const t of [0,3,5,10]) s+=`<line x1="${x(t)}" x2="${x(t)}" y1="54" y2="60" stroke="var(--muted)"/><text x="${x(t)}" y="74" font-size="12" text-anchor="middle" fill="var(--muted)">${t===10?'10σ+':t+'σ'}</text>`;
+  if(st){
+    const kx=x(st.ks), bx=x(st.boot);
+    s+=`<line x1="${kx}" x2="${kx}" y1="16" y2="58" stroke="var(--ink)" stroke-width="3"/><path d="M${kx-7},88 L${kx+7},88 L${kx},78 Z" fill="var(--ink)"/>`;
+    s+=`<line x1="${bx}" x2="${bx}" y1="16" y2="58" stroke="var(--hit)" stroke-width="3" stroke-dasharray="4 3"/><circle cx="${bx}" cy="12" r="5" fill="var(--hit)"/>`;
+  }
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=s;
+  if(!st){$('sigRead').innerHTML='Too few shots<small>need at least 3 hits and 3 nulls</small>';$('verdict').textContent='Add shots, improve alignment or lower the hit threshold.';return;}
+  const f=v=>v>=10?v.toFixed(0):v.toFixed(1);
+  $('sigRead').innerHTML=`${f(st.ks)}σ<small>KS test on ${META[metric].name}</small>`;
+  const best=Math.min(st.ks,st.boot);
+  const word= best>=5?'Both tests clear 5σ: a definitive difference between hits and nulls.'
+            : best>=3?'Evidence of a difference, but not yet the 5σ needed to call it an observation.'
+            : 'Hits and nulls could plausibly come from the same distribution.';
+  $('verdict').innerHTML=`<span style="color:var(--hit)">●</span> Bootstrap of the means: ${f(st.boot)}σ. ${word}`;
+}
+
+function drawSort(){
+  const sd=BKG_SD, th=+$('thresh').value;
+  const groups=[['hit','--hit','Hit'],['null','--null','Null'],['skip','--skip','Ambiguous']];
+  const traces=groups.map(([c,col,name])=>{const g=shots.filter(s=>s.cls===c);
+    return{type:'scatter',mode:'markers',name,x:g.map(s=>s.Qg2),y:g.map(s=>s.y*s.Qg2),
+      customdata:g.map(s=>s.laserOn?'laser on':'laser off'),
+      marker:{size:5,color:rgba(css(col),c==='skip'?0.55:0.75),symbol:g.map(s=>s.laserOn?'circle':'circle-open')},
+      hovertemplate:`${name}, %{customdata}<extra></extra>`};});
+  let lo=Infinity,hi=0;for(const s of shots){lo=Math.min(lo,s.Qg2);hi=Math.max(hi,s.Qg2);}
+  const xs=[lo*0.9,hi*1.1];
+  const ln=(f,dash,txt)=>({type:'scatter',mode:'lines',x:xs,y:xs.map(v=>v*f),line:{color:css('--muted'),width:1.4,dash},hoverinfo:'skip',name:txt});
+  traces.unshift(ln(1,'solid','background'),ln(Math.exp(sd),'dot','+1σ'),ln(Math.exp(th*sd),'dash',`+${th}σ`));
+  const L=layout('Beam charge × energy², Q⟨γ²⟩ (pC GeV²)','Gamma signal (arb. units)',true,true);
+  L.annotations=[{x:Math.log10(xs[1]),y:Math.log10(xs[1]*Math.exp(th*sd)),text:`hit line, +${th}σ`,showarrow:false,xanchor:'right',yanchor:'bottom',font:{size:12,color:css('--muted')}}];
+  Plotly.react('sortPlot',traces,L,PCFG);
+}
+
+function drawDist(){
+  const st=stats[metric], M=META[metric];
+  if(!st){Plotly.react('distPlot',[],layout(M.axis,'',false,false),PCFG);$('distCap').textContent='Not enough hits or nulls to compare.';return;}
+  let traces,L;
+  if(view==='raw'){
+    const all=[...st.hits,...st.nulls]; let lo=Math.min(...all),hi=Math.max(...all);
+    const size=(hi-lo)/Math.max(12,Math.min(40,Math.round(Math.sqrt(all.length))));
+    const hb={start:lo,end:hi+size,size};
+    traces=[{type:'histogram',x:st.nulls,name:'Nulls',histnorm:'probability',xbins:hb,marker:{color:rgba(css('--null'),0.45),line:{color:css('--null'),width:1}},hovertemplate:'Nulls: %{y:.1%}<extra></extra>'},
+            {type:'histogram',x:st.hits,name:'Hits',histnorm:'probability',xbins:hb,marker:{color:rgba(css('--hit'),0.45),line:{color:css('--hit'),width:1}},hovertemplate:'Hits: %{y:.1%}<extra></extra>'}];
+    L=layout(M.axis,'Fraction of shots',false,false);
+    $('distCap').textContent=`${stats.nH} hits and ${stats.nN} nulls, each normalised to 1. Hits average ${M.fmt(st.mH)}, nulls ${M.fmt(st.mN)}. The overlap is shot-to-shot jitter; the shift is radiation reaction.`;
+  } else {
+    traces=[{type:'histogram',x:Array.from(st.bb),name:'Nulls',histnorm:'probability density',nbinsx:50,marker:{color:rgba(css('--null'),0.45),line:{color:css('--null'),width:1}},hoverinfo:'skip'},
+            {type:'histogram',x:Array.from(st.ba),name:'Hits',histnorm:'probability density',nbinsx:50,marker:{color:rgba(css('--hit'),0.45),line:{color:css('--hit'),width:1}},hoverinfo:'skip'}];
+    L=layout('Mean of '+M.axis.charAt(0).toLowerCase()+M.axis.slice(1),'Probability density',false,false);
+    $('distCap').textContent=`Resample each group with replacement 2,000 times and take the mean each time. The width of each peak is the uncertainty on that group’s mean; the gap between them, ${st.boot.toFixed(1)}σ, is the bootstrap significance.`;
+  }
+  Plotly.react('distPlot',traces,L,PCFG);
+}
+
+function drawTrend(){
+  const M=META[metric];
+  const ok=shots.filter(s=>(s.cls==='hit'||s.cls==='null')&&Number.isFinite(s[metric]));
+  let lo=Math.min(...ok.map(s=>s.y)),hi=Math.max(...ok.map(s=>s.y));
+  const nb=12, edges=[]; for(let i=0;i<=nb;i++) edges.push(lo*Math.pow(hi/lo,i/nb)*(i===nb?1.0001:1));
+  const traces=[];
+  for(const [c,col,name] of [['null','--null','Nulls'],['hit','--hit','Hits']]){
+    const xs=[],ys=[],es=[],ns=[];
+    for(let i=0;i<nb;i++){const g=ok.filter(s=>s.cls===c&&s.y>=edges[i]&&s.y<edges[i+1]).map(s=>s[metric]);
+      if(g.length<3) continue; const m=msd(g); xs.push(Math.sqrt(edges[i]*edges[i+1])); ys.push(m.m); es.push(m.sd/Math.sqrt(g.length)); ns.push(g.length);}
+    traces.push({type:'scatter',mode:'markers+lines',name,x:xs,y:ys,customdata:ns,error_y:{type:'data',array:es,color:css(col),thickness:1.5,width:4},
+      line:{color:css(col),width:1.5},marker:{color:css(col),size:8},hovertemplate:`${name}: %{y:.3g}<br>%{customdata} shots<extra></extra>`});
+  }
+  Plotly.react('trendPlot',traces,layout('Gamma yield ÷ background scaling','Average '+M.name,true,false),PCFG);
+}
+
+function drawAll(){ drawMeter(); drawSort(); drawDist(); drawTrend(); }
+
+let timer=null;
+function run(){
+  if(!LOSS) return;
+  const t0=performance.now();
+  shots=runCampaign(params(),LOSS);
+  stats=computeStats();
+  drawAll();
+  $('status').textContent=`Simulated ${shots.length.toLocaleString()} shots (${stats.nH} hits, ${stats.nN} nulls, ${stats.nSkip} left out) in ${Math.round(performance.now()-t0)} ms.`;
+}
+function schedule(){updateLabels();clearTimeout(timer);timer=setTimeout(run,120);}
+
+for(const s of sliders) $(s).addEventListener('input',schedule);
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const p=PRESETS[b.dataset.preset];for(const k in p)$(k).value=p[k];schedule();}));
+document.querySelectorAll('[data-metric]').forEach(b=>b.addEventListener('click',()=>{
+  metric=b.dataset.metric;document.querySelectorAll('[data-metric]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  if(shots){drawMeter();drawDist();drawTrend();}}));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+  view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  if(shots) drawDist();}));
+$('rerun').addEventListener('click',()=>{seed++;run();});
+window.addEventListener('resize',()=>{if(shots)drawMeter();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(shots)drawAll();});
+
+updateLabels(); drawMeter();
+setTimeout(()=>{try{LOSS=buildLossTable();run();}catch(e){$('status').textContent='The simulation couldn’t start: '+e.message;}},20);
+</script>
+</body>
+</html>

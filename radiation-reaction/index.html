@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>When light pushes back: radiation reaction, explained interactively</title>
+<meta name="description" content="Interactive simulations explaining the 2026 observation of quantum effects on radiation reaction in strong laser fields.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Spectral:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F4; --panel:#FFFFFF; --ink:#18212B; --muted:#5A6676; --line:#CDD5DE;
+  --laser:#A3122F; --classical:#D1495B; --qc:#2563A8; --qs:#7B3FB8; --gamma:#2F7D4F; --accent:#2563A8;
+  color-scheme: light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+    --laser:#F0506E; --classical:#F27084; --qc:#5C9BE6; --qs:#B183EC; --gamma:#5DBB84; --accent:#5C9BE6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+  --laser:#F0506E; --classical:#F27084; --qc:#5C9BE6; --qs:#B183EC; --gamma:#5DBB84; --accent:#5C9BE6;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.6 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 20px 56px}
+h1,h2{font-family:Spectral,Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-0.01em;margin:0}
+h1{font-size:clamp(2.3rem,6.5vw,4rem);line-height:1.02;max-width:14ch}
+h2{font-size:1.45rem;line-height:1.2}
+a{color:var(--accent)}
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:center}
+.back{display:inline-block;font-size:.95rem;font-weight:700;color:var(--muted);text-decoration:none;margin:0 0 18px}
+.back:hover{color:var(--ink)}
+.kicker{font-size:.95rem;font-weight:700;color:var(--muted);margin:0 0 12px;letter-spacing:.02em}
+.collision{width:100%;height:auto;display:block}
+.prose{max-width:66ch;margin-top:30px}
+.prose p{margin:0 0 1em}
+.prose p:first-child{font-size:1.15rem}
+.pages{display:grid;gap:16px;margin-top:34px;padding:0;list-style:none;counter-reset:page}
+.page{counter-increment:page}
+.page a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 20px;align-items:start;background:var(--panel);border-radius:14px;padding:22px 20px;text-decoration:none;color:var(--ink);border:1.5px solid transparent;transition:border-color .15s}
+.page a:hover{border-color:var(--line)}
+.page a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-family:Spectral,Georgia,serif;font-size:2.6rem;line-height:.9;font-weight:700;color:var(--muted);grid-row:span 2}
+.num::before{content:counter(page)}
+.page h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tag{font-family:"Atkinson Hyperlegible",sans-serif;font-size:.85rem;font-weight:700;color:var(--muted);border:1.5px solid var(--line);border-radius:999px;padding:1px 10px}
+.page p{margin:0;color:var(--muted);max-width:64ch;grid-column:2}
+.arrow{font-size:1.6rem;line-height:1;color:var(--muted);grid-row:span 2;align-self:center}
+.page a:hover .arrow{color:var(--ink)}
+.start{font-size:.95rem;font-weight:700;color:var(--accent)}
+footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem;max-width:72ch}
+@media (max-width:760px){
+  .hero{grid-template-columns:minmax(0,1fr)}
+  .page a{grid-template-columns:auto minmax(0,1fr);padding:18px 16px}
+  .arrow{display:none}
+  .num{font-size:2.1rem}
+}
+.ray{stroke-dasharray:1 1;stroke-dashoffset:0}
+@media (prefers-reduced-motion: no-preference){
+  /* One 4.5 s loop: beams approach, overlap at ~32%, gamma rays grow forward, everything fades and restarts */
+  .beam{animation:e-move 4.5s linear infinite}
+  .pulse{animation:l-move 4.5s linear infinite}
+  .ray{animation:ray 4.5s cubic-bezier(.2,.7,.3,1) infinite}
+  .ray.side{animation-delay:.08s}
+  .ray.outer{animation-delay:.16s}
+  @keyframes e-move{0%{transform:translateX(-40px);opacity:0}6%{opacity:1}84%{opacity:1}92%,100%{transform:translateX(130px);opacity:0}}
+  @keyframes l-move{0%{transform:translateX(40px);opacity:0}6%{opacity:1}84%{opacity:1}92%,100%{transform:translateX(-130px);opacity:0}}
+  @keyframes ray{0%,32%{stroke-dashoffset:1;opacity:0}33%{stroke-dashoffset:.97;opacity:1}72%{stroke-dashoffset:0;opacity:1}86%{stroke-dashoffset:0;opacity:1}96%,100%{stroke-dashoffset:0;opacity:0}}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← All papers</a>
+  <header class="hero">
+    <div>
+      <p class="kicker">An interactive guide to a 2026 Nature Communications paper</p>
+      <h1>When light pushes back</h1>
+    </div>
+    <svg class="collision" viewBox="0 0 420 220" role="img" aria-label="An electron beam moving right meets a laser pulse moving left. Gamma rays stream out to the right, in the electrons’ direction of travel.">
+      <!-- gamma rays: a narrow forward cone along the electron direction; each grows from the collision point -->
+      <g stroke="var(--gamma)" stroke-width="2.2" stroke-linecap="butt" fill="none">
+        <path class="ray" pathLength="1" d="M196 110 L412 110"/>
+        <path class="ray side" pathLength="1" d="M196 108 L408 90"/><path class="ray side" pathLength="1" d="M196 112 L408 130"/>
+        <path class="ray outer" pathLength="1" d="M196 106 L400 74" stroke-opacity=".55"/><path class="ray outer" pathLength="1" d="M196 114 L400 146" stroke-opacity=".55"/>
+      </g>
+      <!-- electron beam -->
+      <g class="beam">
+        <g fill="var(--qc)">
+          <circle cx="104" cy="104" r="3.4"/><circle cx="122" cy="114" r="3.4"/><circle cx="140" cy="106" r="3.4"/>
+          <circle cx="156" cy="113" r="3.4"/><circle cx="172" cy="108" r="3.4"/><circle cx="130" cy="100" r="3"/><circle cx="148" cy="118" r="3"/>
+        </g>
+      </g>
+      <!-- laser pulse -->
+      <g class="pulse">
+        <path d="M212 110 C222 70, 232 70, 242 110 S262 150, 272 110 S292 62, 302 110 S322 152, 332 110 S352 80, 362 110 S376 128, 384 110"
+              stroke="var(--laser)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+      <text x="138" y="146" font-size="13" fill="var(--muted)" text-anchor="middle" font-family="Atkinson Hyperlegible, system-ui, sans-serif">electrons →</text>
+      <text x="298" y="184" font-size="13" fill="var(--muted)" text-anchor="middle" font-family="Atkinson Hyperlegible, system-ui, sans-serif">← laser pulse</text>
+      <text x="404" y="52" font-size="13" fill="var(--gamma)" text-anchor="end" font-family="Atkinson Hyperlegible, system-ui, sans-serif">gamma rays →</text>
+    </svg>
+  </header>
+
+  <section class="prose">
+    <p>Shake an electron hard enough and it glows, and every bit of light it gives off pushes it back a little. Physicists call this push radiation reaction. Under ordinary conditions it’s far too small to notice. But in the field of the world’s most intense lasers, an electron can lose a large share of its energy in a few femtoseconds, and how much it loses depends on whether you treat the light classically or as quantum photons.</p>
+    <p>In January 2026, a team led from Imperial College London reported the clearest test yet. At the Gemini laser in the UK, they fired electron beams moving at nearly the speed of light head-on into a laser pulse more than 600 times. The electrons that collided came out with measurably less energy, a result significant beyond the 5σ level physicists require to call something an observation. When they compared models, the quantum descriptions explained the data better than the classical one.</p>
+    <p>These pages rebuild the paper’s main ideas as small simulations you can play with. They’re toy models: simplified, but built on the same physics. Each page explains what it leaves out.</p>
+  </section>
+
+  <ol class="pages">
+    <li class="page">
+      <a href="radiation-reaction-simulator.html">
+        <span class="num" aria-hidden="true"></span>
+        <h2>Radiation reaction, three ways <span class="tag">Start here</span></h2>
+        <span class="arrow" aria-hidden="true">→</span>
+        <p>Fire a simulated electron beam into a laser pulse and compare the three models the paper tests. See how quantum effects reduce energy loss, why only one model spreads the beam out, and why misalignment makes that spreading hard to interpret.</p>
+      </a>
+    </li>
+    <li class="page">
+      <a href="figure3-hits-and-nulls.html">
+        <span class="num" aria-hidden="true"></span>
+        <h2>Hits, nulls and five sigma <span class="tag">Figure 3</span></h2>
+        <span class="arrow" aria-hidden="true">→</span>
+        <p>The experiment never measured the same beam before and after a collision. Run a pretend campaign of hundreds of shots, sort them into hits and misses, and see how shot-to-shot jitter, alignment and the number of shots decide whether the energy loss clears 5σ.</p>
+      </a>
+    </li>
+    <li class="page">
+      <a href="figure4-fitting-one-shot.html">
+        <span class="num" aria-hidden="true"></span>
+        <h2>Fitting one shot, three ways <span class="tag">Figure 4</span></h2>
+        <span class="arrow" aria-hidden="true">→</span>
+        <p>Nobody knew exactly how strong the laser was where each collision happened. Try fitting a simulated shot by hand with each model, then watch a Bayesian fit do it properly, and find out why the gamma-ray detector, not the electrons, is what tells the models apart.</p>
+      </a>
+    </li>
+  </ol>
+
+  <footer>
+    Based on E. E. Los et al., “Observation of quantum effects on radiation reaction in strong fields,” <i>Nature Communications</i> <b>17</b>, 1157 (2026), <a href="https://doi.org/10.1038/s41467-025-67918-8">doi:10.1038/s41467-025-67918-8</a>. These are independent educational simulations, not the authors’ code or data, and their numbers are illustrative.
+  </footer>
+</div>
+</body>
+</html>

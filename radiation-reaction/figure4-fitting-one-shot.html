@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fitting one shot — how Figure 4 compares radiation-reaction models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Spectral:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+:root{
+  --bg:#EDF1F4; --panel:#FFFFFF; --ink:#18212B; --muted:#5A6676; --line:#CDD5DE;
+  --classical:#D1495B; --qc:#2563A8; --qs:#7B3FB8; --initial:#8E99A8; --good:#2F7D4F; --bad:#B4462E; --accent:#2563A8;
+  color-scheme: light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+    --classical:#F27084; --qc:#5C9BE6; --qs:#B183EC; --initial:#7C8796; --good:#5DBB84; --bad:#EE8366; --accent:#5C9BE6; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+  --classical:#F27084; --qc:#5C9BE6; --qs:#B183EC; --initial:#7C8796; --good:#5DBB84; --bad:#EE8366; --accent:#5C9BE6; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:28px 20px 56px}
+h1,h2{font-family:Spectral,Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-0.01em;margin:0}
+h1{font-size:clamp(2rem,5.5vw,3.3rem);line-height:1.05;max-width:18ch}
+h2{font-size:1.35rem;line-height:1.2;margin-bottom:.4rem}
+.lede{max-width:64ch;color:var(--muted);margin:14px 0 0}
+a{color:var(--accent)}
+.fit{margin:30px 0 8px;background:var(--panel);border-radius:14px;padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;align-items:end}
+.score{font-family:Spectral,Georgia,serif;font-size:clamp(2.2rem,6vw,3rem);line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.score-label{font-size:.95rem;color:var(--muted);margin:6px 0 0}
+.score-word{font-weight:700}
+.fit p.howto{grid-column:1/-1;margin:0;color:var(--muted);font-size:.92rem;max-width:72ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;margin-top:14px}
+.plots{display:grid;gap:20px;min-width:0}
+.card{background:var(--panel);border-radius:14px;padding:18px 16px 12px;min-width:0}
+.card p.cap{margin:0 0 6px;color:var(--muted);font-size:.95rem;max-width:64ch}
+.plot{width:100%;height:320px}
+.controls{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--panel);border-radius:14px;padding:18px}
+.ctrl{margin:0 0 15px}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:.95rem}
+.ctrl output{font-weight:400;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ctrl .hint{font-size:.82rem;color:var(--muted);margin:2px 0 0}
+input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--accent);height:28px}
+select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;margin-top:6px}
+.group-label{font-size:.85rem;color:var(--muted);margin:6px 0 8px;font-weight:700}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+button{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.models{display:grid;gap:6px;margin:0 0 14px}
+.models button{display:flex;align-items:center;gap:9px;border-radius:10px;text-align:left;padding:8px 12px}
+.models button[aria-pressed="true"]{border-color:var(--ink);font-weight:700}
+.sw{width:22px;height:4px;border-radius:2px;display:inline-block;flex:none}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row button{flex:1 1 auto}
+.primary{border-color:var(--ink);font-weight:700}
+.status{font-size:.85rem;color:var(--muted);min-height:1.3em;margin:10px 0 0}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem;margin:6px 0 8px}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:700;color:var(--muted);font-size:.85rem}
+.truth{margin:6px 0 0;font-size:.95rem}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px}
+.notes ul{padding-left:1.1em;margin:.4em 0 0}
+.notes li{margin:.35em 0;max-width:60ch}
+details summary{cursor:pointer;font-weight:700}
+.back{display:inline-block;font-size:.95rem;font-weight:700;color:var(--muted);text-decoration:none;margin:0 0 14px}
+.back:hover{color:var(--ink)}
+footer{margin-top:28px;color:var(--muted);font-size:.9rem;max-width:70ch}
+@media (max-width:860px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .controls{position:static;order:-1}
+  .plot{height:290px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="back" href="index.html">← All pages</a>
+  <h1>Fitting one shot, three ways</h1>
+  <p class="lede">For each bright shot, the experiment knew the electron spectrum after the collision and the gamma rays it produced, but not exactly how strong the laser was where the beam crossed it. Figure 4 of <a href="https://doi.org/10.1038/s41467-025-67918-8">Los et al. (2026)</a> shows each model being tuned to fit one such shot. Here you get a simulated shot and can try the fit yourself, then let Bayesian inference do it properly.</p>
+</header>
+
+<section class="fit" aria-label="Goodness of fit">
+  <div><div class="score" id="scoreE">—</div><p class="score-label">Electron spectrum misfit <span class="score-word" id="wordE"></span></p></div>
+  <div><div class="score" id="scoreP">—</div><p class="score-label">Gamma-ray detector misfit <span class="score-word" id="wordP"></span></p></div>
+  <p class="howto">Misfit is χ² per data point: around 1 means the model matches within the error bars; much bigger means it doesn’t. Try to get both close to 1 with each model.</p>
+</section>
+
+<div class="grid">
+  <div class="plots">
+    <section class="card">
+      <div class="card-head">
+        <h2>Electron spectrum</h2>
+        <div class="seg" role="group" aria-label="Which fit to show">
+          <button aria-pressed="true" data-show="mine">Your fit</button>
+          <button aria-pressed="false" data-show="bayes">Best fits</button>
+        </div>
+      </div>
+      <p class="cap">Grey is the beam before the collision, known only from a prediction; points are what was measured after it. Each model has to turn the grey curve into the points.</p>
+      <div id="ePlot" class="plot"></div>
+    </section>
+    <section class="card">
+      <h2>Gamma rays in the detector</h2>
+      <p class="cap">Energy left in each 5 mm slab of a caesium-iodide stack. Higher-energy photons penetrate deeper, so the shape of this curve encodes the photon spectrum.</p>
+      <div id="pPlot" class="plot"></div>
+    </section>
+    <section class="card">
+      <h2>What Bayesian inference concludes</h2>
+      <p class="cap" id="bayesCap">Each model is scored over every combination of laser strength and spread, not just its best one. The curves show how plausible each laser strength is under each model.</p>
+      <div id="postPlot" class="plot"></div>
+      <div class="tablewrap"><table id="inferTable" aria-label="Inferred parameters"></table></div>
+      <div class="tablewrap"><table id="bfTable" aria-label="Bayes factors"></table></div>
+    </section>
+  </div>
+
+  <aside class="controls" aria-label="Fit settings">
+    <p class="group-label">Model</p>
+    <div class="models" role="group" aria-label="Model to fit">
+      <button aria-pressed="true" data-model="cl"><span class="sw" style="background:var(--classical)"></span>Classical</button>
+      <button aria-pressed="false" data-model="qc"><span class="sw" style="background:var(--qc)"></span>Quantum-continuous</button>
+      <button aria-pressed="false" data-model="qs"><span class="sw" style="background:var(--qs)"></span>Quantum-stochastic</button>
+    </div>
+    <div class="ctrl"><label for="abar">Average laser strength ⟨ã₀⟩ <output id="abaro"></output></label>
+      <input id="abar" type="range" min="2" max="16" step="0.05" value="6">
+      <p class="hint">The typical a₀ electrons actually felt, lower than the peak if they missed focus.</p></div>
+    <div class="ctrl"><label for="sa">Spread in laser strength σ <output id="sao"></output></label>
+      <input id="sa" type="range" min="0" max="4" step="0.05" value="0.5">
+      <p class="hint">How unevenly the laser hit different electrons.</p></div>
+    <button class="primary" id="snap" style="width:100%">Jump to this model’s best fit</button>
+    <hr>
+    <p class="group-label">The simulated shot</p>
+    <div class="ctrl"><label for="truth">Generated with</label>
+      <select id="truth">
+        <option value="qs" selected>Quantum-stochastic physics</option>
+        <option value="qc">Quantum-continuous physics</option>
+        <option value="cl">Classical physics</option>
+      </select></div>
+    <div class="ctrl"><label for="noise">Gamma detector noise <output id="noiseo"></output></label>
+      <input id="noise" type="range" min="2" max="25" step="1" value="8"></div>
+    <div class="row">
+      <button id="newShot">New shot</button>
+      <button id="reveal" aria-pressed="false">Reveal true a₀</button>
+    </div>
+    <p class="truth" id="truthText" hidden></p>
+    <p class="status" id="status" aria-live="polite">Building model tables…</p>
+  </aside>
+</div>
+
+<div class="notes">
+  <section class="card">
+    <h2>Things to try</h2>
+    <ul>
+      <li>Fit the electron spectrum with <b>Classical</b>, then switch to a quantum model without moving the sliders. The quantum fit loses too little energy: classical needs a weaker laser to match the same shift, just as in the paper.</li>
+      <li>Check the gamma-ray misfit at each model’s best fit. The electrons can be matched by every model; the photons are what separate them.</li>
+      <li>Fit <b>Quantum-continuous</b> to a stochastic shot. It needs a larger spread σ to fake the extra broadening, the degeneracy that kept the paper from telling the two quantum models apart.</li>
+      <li>Turn the detector noise up. The Bayes factors shrink toward 1: noisier photons can’t break the tie.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>Reading the real Figure 4</h2>
+    <ul>
+      <li>Panel a is the electron spectrum: the orange band is the neural network’s guess at the beam before collision, red is measured, and coloured lines are each model’s fit.</li>
+      <li>Panel b is energy deposited along the photon detector.</li>
+      <li>The caption lists each model’s inferred ⟨ã₀⟩: about 6.2 for classical and 6.7–6.8 for the quantum models, the same pattern you’ll see here.</li>
+      <li>One shot gives only weak evidence. Figure 5 multiplies the evidence from ten shots.</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>What this toy leaves out</h2>
+    <details>
+      <summary>Simplifications</summary>
+      <ul>
+        <li>The pre-collision spectrum is treated as known. In the paper it was a neural-network prediction with its own uncertainty, which is part of why their fits were looser.</li>
+        <li>Two parameters stand in for the paper’s three (a₀, beam duration and collision offset): the average field electrons felt and its spread.</li>
+        <li>The stochastic model is approximated by its mean and variance (a Fokker–Planck treatment) rather than full Monte Carlo, and shares the quantum-continuous photon spectrum.</li>
+        <li>Photon deposition uses a textbook shower profile in CsI instead of a Geant4 simulation. Inference is a brute-force grid with flat priors, not MCMC with LOO-PSIS.</li>
+      </ul>
+    </details>
+  </section>
+</div>
+<footer>Toy model built to accompany E. E. Los et al., “Observation of quantum effects on radiation reaction in strong fields”, <i>Nat. Commun.</i> <b>17</b>, 1157 (2026). The simulated shot and all numbers here are illustrative, not the paper’s data.</footer>
+</div>
+
+<script>
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+// ---------- Toy radiation-reaction physics engine ----------
+// Units: time in fs, energy in units of m_e c^2 (gamma), photon energies as fraction f of electron energy.
+const ALPHA = 1/137.035999;
+const MC2_MEV = 0.51099895;
+const OMEGA_C = 7.7634407e20 * 1e-15;      // m c^2 / hbar in fs^-1
+const HBAR_OMEGA_L = 1.5498 / 0.51099895e6; // hbar*omega_L / m c^2 for 0.8 um
+const LAMBDA_UM = 0.8;
+const PERIOD_FS = LAMBDA_UM * 1e-6 / 2.99792458e8 * 1e15; // 2.67 fs
+
+// --- Bessel-function tables: K_{2/3}(xi) and Int_xi^inf K_{1/3}(x) dx ---
+function besselTables(){
+  const n = 700, lo = Math.log(1e-9), hi = Math.log(120);
+  const lx = new Float64Array(n), lK = new Float64Array(n), lI = new Float64Array(n);
+  for (let i=0;i<n;i++){
+    const l = lo + (hi-lo)*i/(n-1), x = Math.exp(l);
+    const T = Math.acosh(Math.max(60/x, 1.0001)) + 0.5;
+    const m = 2000, h = T/m;
+    let sK=0, sI=0;
+    for (let j=0;j<=m;j++){
+      const t=j*h, ch=Math.cosh(t), e=Math.exp(-x*ch);
+      const w = (j===0||j===m)?1:(j%2?4:2);
+      sK += w*e*Math.cosh(2*t/3);
+      sI += w*e*Math.cosh(t/3)/ch;
+    }
+    lx[i]=l; lK[i]=Math.log(sK*h/3); lI[i]=Math.log(sI*h/3);
+  }
+  const interp=(arr,x)=>{
+    if (x>=120) return 0;
+    const l=Math.log(Math.max(x,1e-9)), p=(l-lo)/(hi-lo)*(n-1);
+    const i=Math.min(n-2,Math.max(0,Math.floor(p))), r=p-i;
+    return Math.exp(arr[i]*(1-r)+arr[i+1]*r);
+  };
+  return { K23:x=>interp(lK,x), IK13:x=>interp(lI,x) };
+}
+
+// Spectra (dimensionless): dN/(dt df) = ALPHA*OMEGA_C/(sqrt3*pi*gamma) * F(f)
+function buildTables(){
+  const B = besselTables();
+  const Fq = (f,eta)=>{ const xi=2*f/(3*eta*(1-f)); return (1-f+1/(1-f))*B.K23(xi) - B.IK13(xi); };
+  const Fc = xi => 2*B.K23(xi) - B.IK13(xi); // classical, xi = 2f/(3eta)
+
+  // eta grid
+  const NE=160, eLo=Math.log(1e-5), eHi=Math.log(20);
+  const NY=300;
+  const etaL=new Float64Array(NE), rate=new Float64Array(NE), gaunt=new Float64Array(NE), m2=new Float64Array(NE);
+  const cdf=[], ygrid=[];
+  // energy-spectrum shapes on log10(f) bins
+  const DB=0.05, FB_LO=-14; const NFB=Math.round(-FB_LO/DB);
+  const qShape=[];
+  const S3P = Math.sqrt(3)*Math.PI;
+  for (let k=0;k<NE;k++){
+    const le=eLo+(eHi-eLo)*k/(NE-1), eta=Math.exp(le); etaL[k]=le;
+    const y0=Math.log(eta*1e-7), y1=Math.log(150*eta), dy=(y1-y0)/(NY-1);
+    const ys=new Float64Array(NY), c=new Float64Array(NY), shp=new Float64Array(NFB);
+    let N=0, P=0, prev=0, Q2=0;
+    for (let j=0;j<NY;j++){
+      const y=y0+j*dy, f=1/(1+Math.exp(-y)), jac=f*(1-f);
+      const v=Math.max(Fq(f,eta),0)*jac;
+      if (j>0){ N += 0.5*(v+prev)*dy; }
+      prev=v; ys[j]=y; c[j]=N;
+      P += v*f*dy; Q2 += v*f*f*dy;
+      const b=Math.floor((Math.log10(f)-FB_LO)/DB);
+      if (b>=0 && b<NFB) shp[b]+=v*f*dy;
+    }
+    rate[k]=N; // times ALPHA*OMEGA_C/(S3P*gamma)
+    // classical power in same units: (2/3) eta^2 * S3P  (since prefactor/gamma * gamma)
+    gaunt[k]=P/((2/3)*eta*eta*S3P); m2[k]=Q2;
+    for (let b=0;b<NFB;b++) shp[b]/=P;
+    for (let j=0;j<NY;j++) c[j]/=N;
+    cdf.push(c); ygrid.push(ys); qShape.push(shp);
+  }
+  // classical energy shape over log10(x), x=f/eta
+  const NX=600, xL=-9, xH=3; const cShape=new Float64Array(NFB); let Pc=0;
+  const cRaw=[];
+  for (let j=0;j<NX;j++){
+    const lx=xL+(xH-xL)*j/(NX-1), x=Math.pow(10,lx), dlx=(xH-xL)/(NX-1);
+    const v=Fc(2*x/3)*x*x*Math.LN10*dlx; Pc+=v; cRaw.push([lx,v]);
+  }
+  // shape indexed by log10(x) bins with origin at x=1 offset; store with same DB, range [-9,3]
+  const CB_LO=-9, NCB=Math.round((3-CB_LO)/DB); const cShp=new Float64Array(NCB);
+  for (const [lx,v] of cRaw){ const b=Math.floor((lx-CB_LO)/DB); if(b>=0&&b<NCB) cShp[b]+=v/Pc; }
+  const classicalCheck = Pc/((2/3)*S3P);
+  return {etaL,rate,gaunt,m2,cdf,ygrid,qShape,cShp,CB_LO,DB,FB_LO,NE,eLo,eHi,classicalCheck};
+}
+
+
+
+// ===== Figure 4 toy: forward models, calorimeter, Bayesian grid inference =====
+const X0_MM=18.6, EC_MEV=11.2, NLAY=30, LAY_MM=5;
+const PB_LO=-2, PB_DB=0.05, NPB=Math.round((4.5-PB_LO)/PB_DB);
+function lnGamma(z){const g=7,c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(z<0.5)return Math.log(Math.PI/Math.sin(Math.PI*z))-lnGamma(1-z);z-=1;let x=c[0];for(let i=1;i<g+2;i++)x+=c[i]/(z+i);const t=z+g+0.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x);}
+// Calorimeter response: fraction of photon energy deposited in each 5 mm layer (Longo shower profile)
+function caloResponse(){
+  const R=[];
+  for(let j=0;j<NPB;j++){
+    const E=Math.pow(10,PB_LO+(j+.5)*PB_DB), b=0.5;
+    const tmax=Math.max(0.1,Math.log(E/EC_MEV)+0.5), a=b*tmax+1, lg=lnGamma(a);
+    const v=new Float64Array(NLAY);
+    for(let l=0;l<NLAY;l++){let s=0;const n=20;for(let k=0;k<n;k++){const t=((l+(k+.5)/n)*LAY_MM)/X0_MM;
+        s+=Math.exp(Math.log(b)+(a-1)*Math.log(b*t)-b*t-lg)*(LAY_MM/X0_MM)/n;} v[l]=s;}
+    R.push(v);
+  }
+  return R;
+}
+// Per-cell tables over (gamma0, a): final mean fraction, QS sd fraction, calorimeter deposits for classical & quantum
+function buildCells(T){
+  const NG=26, gLo=Math.log(250/MC2_MEV), gHi=Math.log(1400/MC2_MEV), NA=57, aMax=28;
+  const tauE=22.5, tW=1.7*tauE, dt=0.5, nS=Math.ceil(2*tW/dt);
+  const env=new Float64Array(nS);for(let s=0;s<nS;s++){const t=-tW+(s+.5)*dt;env[s]=Math.exp(-2*Math.LN2*(t/tauE)**2)/Math.SQRT2;} // rms field
+  const kE=2*HBAR_OMEGA_L, Acl=(2/3)*ALPHA*OMEGA_C, Dq=ALPHA*OMEGA_C/(Math.sqrt(3)*Math.PI);
+  const R=caloResponse();
+  const mC=new Float64Array(NG*NA), mQ=new Float64Array(NG*NA), sQ=new Float64Array(NG*NA);
+  const dC=new Float64Array(NG*NA*NLAY), dQ=new Float64Array(NG*NA*NLAY);
+  const spec=new Float64Array(NPB);
+  const gi=k=>Math.min(T.NE-2,Math.max(0,Math.floor((Math.log(Math.max(k,1e-12))-T.eLo)/(T.eHi-T.eLo)*(T.NE-1))));
+  const interpT=(arr,eta)=>{const p=(Math.log(Math.max(eta,1e-12))-T.eLo)/(T.eHi-T.eLo)*(T.NE-1);if(p<=0)return arr[0];const i=Math.min(T.NE-2,Math.floor(p)),r=p-i;return arr[i]*(1-r)+arr[i+1]*r;};
+  const trimmed=new Map();
+  const trim=sh=>{let t=trimmed.get(sh);if(t)return t;let a=0,b=sh.length-1;while(a<b&&sh[a]<1e-6)a++;while(b>a&&sh[b]<1e-6)b--;t={a,v:sh.subarray(a,b+1)};trimmed.set(sh,t);return t;};
+  const addShape=(shape,lo,off,E)=>{const t=trim(shape);const sh=Math.round((lo+off-PB_LO)/PB_DB)+t.a;const v=t.v;
+    const j0=Math.max(0,-sh),j1=Math.min(v.length,NPB-sh);for(let b=j0;b<j1;b++)spec[b+sh]+=v[b]*E;};
+  for(let i=0;i<NG;i++){const g0=Math.exp(gLo+(gHi-gLo)*i/(NG-1));
+    for(let ja=0;ja<NA;ja++){const a=aMax*ja/(NA-1), c=i*NA+ja;
+      // classical
+      spec.fill(0); let g=g0;
+      for(let s=0;s<nS;s++){const eta=kE*g*a*env[s];if(eta<1e-7)continue;const dE=Acl*eta*eta*dt;
+        addShape(T.cShp,T.CB_LO,Math.log10(eta*g*MC2_MEV),dE*MC2_MEV); g-=dE;}
+      mC[c]=g/g0; fold(spec,R,dC,c);
+      // quantum (mean + Fokker-Planck variance)
+      spec.fill(0); g=g0; let v2=0;
+      for(let s=0;s<nS;s++){const eta=kE*g*a*env[s];if(eta<1e-7)continue;
+        const ge=eta<1e-5?1:interpT(T.gaunt,eta); const gdot=-Acl*eta*eta*ge;
+        const eta2=eta*1.02, ge2=eta2<1e-5?1:interpT(T.gaunt,eta2); const dlng=Math.log(ge2/ge)/Math.log(1.02);
+        const D=g*Dq*(eta<1e-5?0:interpT(T.m2,eta));
+        v2+= (2*v2*gdot/g*(2+dlng) + D)*dt;
+        if(eta>=1e-5) addShape(T.qShape[gi(eta)],T.FB_LO,Math.log10(g*MC2_MEV),-gdot*dt*MC2_MEV);
+        else addShape(T.cShp,T.CB_LO,Math.log10(eta*g*MC2_MEV),-gdot*dt*MC2_MEV);
+        g+=gdot*dt;}
+      mQ[c]=g/g0; sQ[c]=Math.sqrt(Math.max(v2,0))/g0; fold(spec,R,dQ,c);
+    }}
+  function fold(sp,R,out,c){for(let j=0;j<NPB;j++){const e=sp[j];if(e<=0)continue;const r=R[j];for(let l=0;l<NLAY;l++)out[c*NLAY+l]+=e*r[l];}}
+  return {NG,gLo,gHi,NA,aMax,mC,mQ,sQ,dC,dQ};
+}
+// ---------- shot description ----------
+const EBIN=20, ELO=300, EHI=1100, NEB=(EHI-ELO)/EBIN;
+function invNorm(p){const a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],c=[-0.00778489400243029,-0.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],d=[0.00778469570904146,0.32246712907004,2.445134137143,3.75440866190742];
+  const q=Math.min(p,1-p);let x;if(q<0.02425){const t=Math.sqrt(-2*Math.log(q));x=(((((c[0]*t+c[1])*t+c[2])*t+c[3])*t+c[4])*t+c[5])/((((d[0]*t+d[1])*t+d[2])*t+d[3])*t+1);return p<0.5?x:-x;}
+  const t=p-0.5,r=t*t;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*t/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+function makeBeam(M,seed){ // stratified macro-electrons: energies, a-quantiles, stochastic quantiles
+  const r=mulberry32(seed);
+  const E=new Float64Array(M);
+  for(let i=0;i<M;i++){const u=(i+.5)/M; // mixture inverse CDF via sampling grid
+    E[i]=u;}
+  // build CDF of pre-collision spectrum on fine grid
+  const n=2000,xs=[],cdf=[];let acc=0;
+  for(let k=0;k<n;k++){const x=250+k*(1150-250)/(n-1);const pk=0.3*Math.exp(-0.5*((x-864)/32)**2)/(32*2.5066);const tl=x>=260?0.7*Math.exp(-(x-260)/190)/190:0;acc+=pk+tl;xs.push(x);cdf.push(acc);}
+  for(let k=0;k<n;k++)cdf[k]/=acc;
+  for(let i=0;i<M;i++){const u=E[i];let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(cdf[m]<u)lo=m;else hi=m;}E[i]=xs[hi];}
+  const perm=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const zA=perm(Array.from({length:M},(_,i)=>invNorm((i+.5)/M)));
+  const zS=perm(Array.from({length:M},(_,i)=>invNorm((i+.5)/M)));
+  return {E,zA,zS,M};
+}
+// forward model -> {espec (per GeV, normalised on >=300 MeV), depo (MeV per electron per layer)}
+function forward(C,beam,model,abar,sa){
+  const h=new Float64Array(NEB), depo=new Float64Array(NLAY);
+  const tabM= model==='cl'?C.mC:C.mQ, tabD= model==='cl'?C.dC:C.dQ;
+  let nIn=0;
+  for(let i=0;i<beam.M;i++){
+    const E0=beam.E[i], a=Math.max(0,abar+sa*beam.zA[i]);
+    let pi=(Math.log(E0/MC2_MEV)-C.gLo)/(C.gHi-C.gLo)*(C.NG-1); pi=Math.min(C.NG-1.0001,Math.max(0,pi));
+    let pj=a/C.aMax*(C.NA-1); pj=Math.min(C.NA-1.0001,Math.max(0,pj));
+    const ii=Math.floor(pi),jj=Math.floor(pj),r=pi-ii,s=pj-jj,N=C.NA;
+    const w00=(1-r)*(1-s),w10=r*(1-s),w01=(1-r)*s,w11=r*s;
+    const c00=ii*N+jj,c10=(ii+1)*N+jj,c01=ii*N+jj+1,c11=(ii+1)*N+jj+1;
+    const m=tabM[c00]*w00+tabM[c10]*w10+tabM[c01]*w01+tabM[c11]*w11;
+    let Ef=E0*m;
+    if(model==='qs'){const sd=C.sQ[c00]*w00+C.sQ[c10]*w10+C.sQ[c01]*w01+C.sQ[c11]*w11; Ef=Math.max(1,E0*(m+sd*beam.zS[i]));}
+    // scale deposits: tables computed at grid gamma0, so scale by E0/Egrid (energy roughly proportional)
+    if((i&3)===0) for(let l=0;l<NLAY;l++) depo[l]+=tabD[c00*NLAY+l]*w00+tabD[c10*NLAY+l]*w10+tabD[c01*NLAY+l]*w01+tabD[c11*NLAY+l]*w11;
+    if(Ef>=ELO){ nIn++; kde(h,Ef); }
+  }
+  for(let b=0;b<NEB;b++) h[b]=h[b]/Math.max(nIn,1)/(EBIN/1000);
+  for(let l=0;l<NLAY;l++) depo[l]/=Math.ceil(beam.M/4);
+  return {espec:h,depo};
+}
+function preSpec(beam){const h=new Float64Array(NEB);let n=0;for(const e of beam.E){if(e>=ELO){n++;kde(h,e);}}for(let b=0;b<NEB;b++)h[b]=h[b]/n/(EBIN/1000);return h;}
+// Gaussian kernel (spectrometer resolution, 15 MeV) into 20 MeV bins
+const KS=15;
+function erfA(x){const t=1/(1+0.3275911*Math.abs(x));const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return x>=0?y:-y;}
+const KF=64, KW=new Float64Array(KF*5);
+for(let q=0;q<KF;q++){const fr=(q+.5)/KF;for(let k=0;k<5;k++){const lo=(k-2-fr)*EBIN;KW[q*5+k]=0.5*(erfA((lo+EBIN)/(KS*Math.SQRT2))-erfA(lo/(KS*Math.SQRT2)));}}
+function kde(h,E){const x=(E-ELO)/EBIN,b0=Math.floor(x),q=Math.min(KF-1,Math.floor((x-b0)*KF))*5;
+  for(let k=0;k<5;k++){const b=b0-2+k;if(b>=0&&b<NEB)h[b]+=KW[q+k];}}
+// mock measurement
+function makeData(C,truth,seed,photonNoise){
+  const r=mulberry32(seed*31+5);
+  const beamT=makeBeam(1200,seed*101+9); // finer beam for truth
+  const abar=5+6*r(), sa=0.3+1.2*r();
+  const f=forward(C,beamT,truth,abar,sa);
+  const ns=()=>{let u=0;while(!u)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r());};
+  const emax=Math.max(...f.espec), dmax=Math.max(...f.depo);
+  const eSig=Array.from(f.espec,v=>0.06*emax+0.08*v), dSig=Array.from(f.depo,v=>0.02*dmax+photonNoise*v);
+  const espec=Array.from(f.espec,(v,i)=>Math.max(0,v+eSig[i]*ns()));
+  const depo=Array.from(f.depo,(v,i)=>Math.max(0,v+dSig[i]*ns()));
+  return {truth,abar,sa,espec,depo,eSig,dSig};
+}
+function chi2(f,D){let ce=0,cp=0;for(let b=0;b<NEB;b++)ce+=((f.espec[b]-D.espec[b])/D.eSig[b])**2;for(let l=0;l<NLAY;l++)cp+=((f.depo[l]-D.depo[l])/D.dSig[l])**2;return{ce,cp};}
+const GRID={aLo:2,aHi:16,aSt:0.25,sLo:0,sHi:4,sSt:0.4};
+function infer(C,beam,D,model){
+  const as=[],ss=[];for(let a=GRID.aLo;a<=GRID.aHi+1e-9;a+=GRID.aSt)as.push(+a.toFixed(3));for(let s=GRID.sLo;s<=GRID.sHi+1e-9;s+=GRID.sSt)ss.push(+s.toFixed(3));
+  const lnL=[];let best={ln:-Infinity};
+  for(let i=0;i<as.length;i++){const row=[];for(let j=0;j<ss.length;j++){const f=forward(C,beam,model,as[i],ss[j]);const c=chi2(f,D);const l=-0.5*(c.ce+c.cp);row.push(l);
+      if(l>best.ln)best={ln:l,a:as[i],s:ss[j],ce:c.ce,cp:c.cp};}lnL.push(row);}
+  let mx=-Infinity;for(const r of lnL)for(const v of r)mx=Math.max(mx,v);
+  let Z=0;const margA=as.map(()=>0);let mA=0,mA2=0,mS=0,mS2=0;
+  for(let i=0;i<as.length;i++)for(let j=0;j<ss.length;j++){const w=Math.exp(lnL[i][j]-mx);Z+=w;margA[i]+=w;mA+=w*as[i];mA2+=w*as[i]*as[i];mS+=w*ss[j];mS2+=w*ss[j]*ss[j];}
+  mA/=Z;mS/=Z;
+  const lnZ=mx+Math.log(Z/(as.length*ss.length)); // uniform prior
+  return {as,ss,margA:margA.map(v=>v/Z/GRID.aSt),aMean:mA,aSd:Math.sqrt(Math.max(mA2/Z-mA*mA,0)),sMean:mS,sSd:Math.sqrt(Math.max(mS2/Z-mS*mS,0)),lnZ,best};
+}
+
+
+/* =================== UI =================== */
+const $=id=>document.getElementById(id);
+const NAMES={cl:'Classical',qc:'Quantum-continuous',qs:'Quantum-stochastic'};
+const COL={cl:'--classical',qc:'--qc',qs:'--qs'};
+let CELLS=null, BEAM=null, PRE=null, DATA=null, POST={}, model='cl', showMode='mine', shotSeed=1, revealed=false, inferToken=0;
+const DEPTH=Array.from({length:NLAY},(_,l)=>(l+.5)*LAY_MM);
+const EX=Array.from({length:NEB},(_,b)=>ELO+(b+.5)*EBIN);
+
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function rgba(hex,a){const h=hex.replace('#','');const n=parseInt(h,16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+function layout(xt,yt){const ink=css('--ink'),muted=css('--muted'),line=css('--line');
+  return{margin:{l:56,r:12,t:8,b:50},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+    font:{family:'"Atkinson Hyperlegible",system-ui,sans-serif',size:13,color:ink},showlegend:false,dragmode:false,
+    hoverlabel:{font:{family:'"Atkinson Hyperlegible",system-ui,sans-serif'}},
+    xaxis:{title:{text:xt,standoff:6},gridcolor:line,zeroline:false,color:muted,tickfont:{color:muted}},
+    yaxis:{title:{text:yt,standoff:4},gridcolor:line,zeroline:false,color:muted,tickfont:{color:muted},rangemode:'tozero'}};}
+const PCFG={displayModeBar:false,responsive:true,scrollZoom:false};
+function updateLabels(){$('abaro').textContent=(+$('abar').value).toFixed(2);$('sao').textContent=(+$('sa').value).toFixed(2);$('noiseo').textContent=$('noise').value+'%';}
+
+function word(x){return x<1.6?['good','--good']:x<3?['so-so','--muted']:['poor','--bad'];}
+function drawScores(f){
+  const c=chi2(f,DATA), e=c.ce/NEB, p=c.cp/NLAY;
+  $('scoreE').textContent=e.toFixed(1); $('scoreP').textContent=p.toFixed(1);
+  const we=word(e), wp=word(p);
+  $('wordE').textContent='('+we[0]+')'; $('wordE').style.color=`var(${we[1]})`;
+  $('wordP').textContent='('+wp[0]+')'; $('wordP').style.color=`var(${wp[1]})`;
+}
+function modelLines(){
+  if(showMode==='mine') return [[model,forward(CELLS,BEAM,model,+$('abar').value,+$('sa').value)]];
+  return ['cl','qc','qs'].filter(m=>POST[m]).map(m=>[m,forward(CELLS,BEAM,m,POST[m].best.a,POST[m].best.s)]);
+}
+function drawFits(){
+  if(!DATA) return;
+  const mine=forward(CELLS,BEAM,model,+$('abar').value,+$('sa').value);
+  drawScores(mine);
+  const lines=showMode==='mine'?[[model,mine]]:modelLines();
+  const ink=css('--ink');
+  const et=[{x:EX,y:Array.from(PRE),name:'Before collision',line:{color:css('--initial'),width:2,dash:'dash',shape:'spline'},fill:'tozeroy',fillcolor:rgba(css('--initial'),0.12),hovertemplate:'Before: %{y:.2f}<extra></extra>'},
+    {x:EX,y:DATA.espec,name:'Measured',mode:'markers',marker:{color:ink,size:6},error_y:{type:'data',array:DATA.eSig,color:rgba(ink,0.35),thickness:1.2,width:0},hovertemplate:'Measured: %{y:.2f}<extra></extra>'}];
+  const pt=[{x:DEPTH,y:DATA.depo,name:'Measured',mode:'markers',marker:{color:ink,size:6},error_y:{type:'data',array:DATA.dSig,color:rgba(ink,0.35),thickness:1.2,width:0},hovertemplate:'Measured: %{y:.2f} MeV<extra></extra>'}];
+  for(const [m,f] of lines){
+    et.push({x:EX,y:Array.from(f.espec),name:NAMES[m],line:{color:css(COL[m]),width:2.6,shape:'spline'},hovertemplate:NAMES[m]+': %{y:.2f}<extra></extra>'});
+    pt.push({x:DEPTH,y:Array.from(f.depo),name:NAMES[m],line:{color:css(COL[m]),width:2.6,shape:'spline'},hovertemplate:NAMES[m]+': %{y:.2f} MeV<extra></extra>'});
+  }
+  Plotly.react('ePlot',et,layout('Electron energy (MeV)','Electrons per GeV (normalised)'),PCFG);
+  Plotly.react('pPlot',pt,layout('Depth into the detector (mm)','Energy deposited per electron (MeV)'),PCFG);
+}
+const KR=b=>{const a=Math.abs(b);return a<0.5?'weak':a<1?'substantial':a<2?'strong':'decisive';};
+function drawBayes(){
+  const ms=['cl','qc','qs'].filter(m=>POST[m]);
+  const tr=ms.map(m=>({x:POST[m].as,y:POST[m].margA,name:NAMES[m],line:{color:css(COL[m]),width:2.6,shape:'spline'},fill:'tozeroy',fillcolor:rgba(css(COL[m]),0.1),hovertemplate:NAMES[m]+': ⟨ã₀⟩ %{x:.2f}<extra></extra>'}));
+  const L=layout('Average laser strength ⟨ã₀⟩','Plausibility (probability density)');
+  if(revealed&&DATA){L.shapes=[{type:'line',x0:DATA.abar,x1:DATA.abar,yref:'paper',y0:0,y1:1,line:{color:css('--ink'),width:1.5,dash:'dot'}}];
+    L.annotations=[{x:DATA.abar,y:1,yref:'paper',text:'true',showarrow:false,xanchor:'left',xshift:4,yanchor:'top',font:{size:12,color:css('--muted')}}];}
+  // zoom to where the curves are
+  let lo=16,hi=2;for(const m of ms){POST[m].as.forEach((a,i)=>{if(POST[m].margA[i]>1e-3*Math.max(...POST[m].margA)){lo=Math.min(lo,a);hi=Math.max(hi,a);}});}
+  if(ms.length){L.xaxis.range=[Math.max(2,lo-0.8),Math.min(16,hi+0.8)];}
+  Plotly.react('postPlot',tr,L,PCFG);
+  let t='<thead><tr><th>Model</th><th>⟨ã₀⟩</th><th>Spread σ</th><th>Electron misfit</th><th>Gamma misfit</th></tr></thead><tbody>';
+  for(const m of ms){const P=POST[m];t+=`<tr><td><span class="sw" style="background:var(${COL[m]});width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px"></span>${NAMES[m]}</td><td>${P.aMean.toFixed(1)} ± ${Math.max(P.aSd,0.05).toFixed(1)}</td><td>${P.sMean.toFixed(1)} ± ${Math.max(P.sSd,0.05).toFixed(1)}</td><td>${(P.best.ce/NEB).toFixed(1)}</td><td>${(P.best.cp/NLAY).toFixed(1)}</td></tr>`;}
+  $('inferTable').innerHTML=t+'</tbody>';
+  if(ms.length===3){
+    const pairs=[['qc','cl'],['qs','cl'],['qs','qc']];
+    let b='<thead><tr><th>Comparison</th><th>Bayes factor</th><th>Evidence</th></tr></thead><tbody>';
+    for(const [x,y] of pairs){const l=(POST[x].lnZ-POST[y].lnZ)/Math.LN10;const fav=l>=0?x:y;
+      const bf=Math.pow(10,Math.abs(l)), bfs=bf>=1000?'> 1000':bf.toFixed(bf<10?1:0);
+      b+=`<tr><td>${NAMES[x]} vs ${NAMES[y].toLowerCase()}</td><td>${bfs} : 1</td><td>${KR(l)}, favours ${NAMES[fav].toLowerCase()}</td></tr>`;}
+    $('bfTable').innerHTML=b+'</tbody>';
+  } else $('bfTable').innerHTML='';
+}
+function newData(){
+  DATA=makeData(CELLS,$('truth').value,shotSeed,+$('noise').value/100);
+  $('truthText').textContent=`This shot used ⟨ã₀⟩ = ${DATA.abar.toFixed(2)} and σ = ${DATA.sa.toFixed(2)}.`;
+  POST={}; drawFits(); drawBayes(); runInference();
+}
+function runInference(){
+  const tok=++inferToken, ms=['cl','qc','qs'];let k=0;const t0=performance.now();
+  const step=()=>{ if(tok!==inferToken) return;
+    if(k>=ms.length){$('status').textContent=`Bayesian fit finished in ${((performance.now()-t0)/1000).toFixed(1)} s.`;drawBayes();if(showMode==='bayes')drawFits();return;}
+    $('status').textContent=`Scoring the ${NAMES[ms[k]].toLowerCase()} model…`;
+    setTimeout(()=>{ if(tok!==inferToken) return; POST[ms[k]]=infer(CELLS,BEAM,DATA,ms[k]); k++; drawBayes(); step(); },16);
+  };
+  step();
+}
+
+document.querySelectorAll('[data-model]').forEach(b=>b.addEventListener('click',()=>{model=b.dataset.model;
+  document.querySelectorAll('[data-model]').forEach(x=>x.setAttribute('aria-pressed',x===b));drawFits();}));
+document.querySelectorAll('[data-show]').forEach(b=>b.addEventListener('click',()=>{showMode=b.dataset.show;
+  document.querySelectorAll('[data-show]').forEach(x=>x.setAttribute('aria-pressed',x===b));drawFits();}));
+for(const id of ['abar','sa']) $(id).addEventListener('input',()=>{updateLabels();if(showMode!=='mine'){showMode='mine';document.querySelectorAll('[data-show]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.show==='mine'));}drawFits();});
+$('snap').addEventListener('click',()=>{const P=POST[model];if(!P){$('status').textContent='The Bayesian fit for this model is still running.';return;}
+  $('abar').value=P.best.a;$('sa').value=P.best.s;updateLabels();showMode='mine';document.querySelectorAll('[data-show]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.show==='mine'));drawFits();});
+$('truth').addEventListener('change',()=>{if(CELLS)newData();});
+let nt=null;$('noise').addEventListener('input',()=>{updateLabels();clearTimeout(nt);nt=setTimeout(()=>{if(CELLS)newData();},250);});
+$('newShot').addEventListener('click',()=>{shotSeed++;if(CELLS)newData();});
+$('reveal').addEventListener('click',()=>{revealed=!revealed;$('reveal').setAttribute('aria-pressed',revealed);$('reveal').textContent=revealed?'Hide true a₀':'Reveal true a₀';$('truthText').hidden=!revealed;drawBayes();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(DATA){drawFits();drawBayes();}});
+
+updateLabels();
+setTimeout(()=>{try{
+  const T=buildTables(); CELLS=buildCells(T); BEAM=makeBeam(400,42); PRE=preSpec(BEAM);
+  newData();
+}catch(e){$('status').textContent='The simulation couldn’t start: '+e.message;}},30);
+</script>
+</body>
+</html>
