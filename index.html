@@ -1,60 +1,143 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Description" content="Interactive explainers for research papers I’ve worked on.">
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    body {background-color: #e9edf1}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 13.2px 'Helvetica Neue'; color: #485363; -webkit-text-stroke: #485363}
-    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.8px 'Helvetica Neue'; color: #485363; -webkit-text-stroke: #485363}
-    li.li3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.4px 'Helvetica Neue'; color: #1d4e97; -webkit-text-stroke: #1d4e97}
-    li.li5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 18.0px 'Helvetica Neue'; color: #131920; -webkit-text-stroke: #131920}
-    li.li6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.6px 'Helvetica Neue'; color: #485363; -webkit-text-stroke: #485363}
-    li.li7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.4px 'Helvetica Neue'; color: #ffffff; -webkit-text-stroke: #ffffff}
-    span.s1 {font-kerning: none}
-    span.s2 {-webkit-text-stroke: 0px #000000}
-    span.s3 {font: 10.8px 'Helvetica Neue'; font-kerning: none; background-color: #ffffff}
-    span.s4 {font: 10.8px 'Helvetica Neue'; font-kerning: none; color: #485363; background-color: #ffffff; -webkit-text-stroke: 0px #485363}
-    span.s5 {font: 10.8px 'Helvetica Neue'; font-kerning: none; color: #485363; -webkit-text-stroke: 0px #485363}
-    span.s6 {font: 20.4px 'Helvetica Neue'; font-kerning: none; background-color: #ffffff}
-    span.s7 {font: 20.4px 'Helvetica Neue'; font-kerning: none}
-    span.s8 {font-kerning: none; background-color: #ffffff}
-    span.s9 {font: 11.4px 'Helvetica Neue'; font-kerning: none; color: #485363; background-color: #ffffff; -webkit-text-stroke: 0px #485363}
-    span.s10 {background-color: #ffffff; -webkit-text-stroke: 0px #000000}
-    span.s11 {background-color: #131920; -webkit-text-stroke: 0px #000000}
-    span.s12 {font-kerning: none; background-color: #131920}
-    span.s13 {font-kerning: none; color: #131920; background-color: #ffffff; -webkit-text-stroke: 0px #131920}
-    ul.ul1 {list-style-type: none}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- EDIT: your name -->
+<title>Your Name — research, explained</title>
+<meta name="description" content="Interactive explainers for research papers I’ve worked on.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Spectral:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F4; --panel:#FFFFFF; --ink:#18212B; --muted:#5A6676; --line:#CDD5DE;
+  --laser:#A3122F; --qc:#2563A8; --gamma:#2F7D4F; --accent:#2563A8;
+  color-scheme: light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+    --laser:#F0506E; --qc:#5C9BE6; --gamma:#5DBB84; --accent:#5C9BE6; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
+  --laser:#F0506E; --qc:#5C9BE6; --gamma:#5DBB84; --accent:#5C9BE6; color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.6 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:40px 20px 56px}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-0.01em;margin:0}
+h1{font-size:clamp(2.4rem,7vw,4.2rem);line-height:1.02}
+h2{font-size:1.1rem;font-family:"Atkinson Hyperlegible",system-ui,sans-serif;letter-spacing:.02em;color:var(--muted);margin:44px 0 14px}
+h3{font-size:clamp(1.35rem,3.4vw,1.7rem);line-height:1.15}
+a{color:var(--accent)}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.intro{max-width:62ch;color:var(--muted);font-size:1.1rem;margin:16px 0 0}
+.links{display:flex;flex-wrap:wrap;gap:8px 18px;margin:18px 0 0;padding:0;list-style:none;font-weight:700;font-size:.95rem}
+.links a{text-decoration:none}
+.links a:hover{text-decoration:underline}
+
+.papers{display:grid;gap:18px;margin:0;padding:0;list-style:none}
+.paper{background:var(--panel);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:260px minmax(0,1fr)}
+.thumb{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:14px;border-right:1px solid var(--line)}
+.thumb svg{width:100%;height:auto;display:block}
+.body{padding:22px 22px 20px;display:flex;flex-direction:column;gap:10px}
+.meta{font-size:.9rem;color:var(--muted);margin:0}
+.meta b{color:var(--ink)}
+.summary{margin:0;max-width:62ch}
+.role{margin:0;font-size:.95rem;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.btn{display:inline-block;font-size:.95rem;font-weight:700;text-decoration:none;border-radius:999px;padding:8px 16px;border:1.5px solid var(--line);color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn.primary:hover{opacity:.9}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.tags li{font-size:.8rem;font-weight:700;color:var(--muted);border:1.5px solid var(--line);border-radius:999px;padding:1px 10px}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+@media (max-width:720px){
+  .paper{grid-template-columns:minmax(0,1fr)}
+  .thumb{border-right:0;border-bottom:1px solid var(--line);padding:10px 14px}
+  .thumb svg{max-width:360px}
+  .body{padding:18px 16px}
+}
+</style>
 </head>
 <body>
-<h1 style="margin: 0.0px 0.0px 0.0px 0.0px; font: 50.4px 'Helvetica Neue'; color: #131920; -webkit-text-stroke: #131920"><span class="s1">Prof Stuart Mangles</span></h1>
-<p class="p2"><span class="s1">I’m a laser-plasma physicist working on physics experiments using Laser Wakefield Accelerators. These pages explain some papers I’ve been involved in, with interactive simulations you can explore</span></p>
-<ul class="ul1">
-  <li class="li3"><span class="s2"><a href="https://github.com/your-username"><span class="s1">GitHub</span></a></span></li>
-  <li class="li3"><span class="s2"><a href="https://orcid.org/0000-0000-0000-0000"><span class="s1">ORCID</span></a></span></li>
-  <li class="li3"><span class="s2"><a href="https://scholar.google.com/"><span class="s1">Google Scholar</span></a></span></li>
-  <li class="li3"><span class="s2"><a href="mailto:you@example.com"><span class="s1">Email</span></a></span></li>
-</ul>
-<h2 style="margin: 0.0px 0.0px 14.0px 0.0px; font: 13.2px 'Helvetica Neue'; color: #485363; -webkit-text-stroke: #485363"><span class="s1">Papers</span></h2>
-<ul class="ul1">
-  <li class="li5"><span class="s2"></span><span class="s1"><br>
-</span><span class="s3">Nature Communications</span><span class="s4"> · 2026</span><span class="s5"><br>
-</span><span class="s6">Observation of quantum effects on radiation reaction in strong fields</span><span class="s7"><br>
-</span><span class="s8">Electrons fired head-on into one of the world’s most intense lasers lose energy to the gamma rays they emit. More than 600 collisions showed this energy loss beyond 5σ, and the data favour quantum descriptions over the classical one.</span><span class="s1"><br>
-</span><span class="s9">My role: [e.g. ran the experiment, analysed the data, built the simulations].</span></li>
-  <ul class="ul1">
-    <li class="li6"><span class="s10"></span><span class="s8">Laser–plasma physics</span></li>
-    <li class="li6"><span class="s10"></span><span class="s8">Strong-field QED</span></li>
-    <li class="li6"><span class="s10"></span><span class="s8">3 interactive simulations</span></li>
-  </ul>
-  <li class="li7"><span class="s11"><a href="file:///Users/sm297/Downloads/research-site/radiation-reaction/"><span class="s1">Explore the explainer</span></a></span><span class="s12"><br>
-<a href="https://doi.org/10.1038/s41467-025-67918-8"><span class="s13">Read the paper</span></a></span></li>
-</ul>
-<p class="p8"><span class="s1">© 2026 Your Name. Interactive explainers are independent educational models, not the original authors’ code or data.</span></p>
+<div class="wrap">
+  <header>
+    <!-- EDIT: your name, a one- or two-sentence introduction, and your links -->
+    <h1>Your Name</h1>
+    <p class="intro">I’m a physicist working on [your research area]. These pages explain papers I’ve been involved in, with interactive simulations you can explore without reading the equations first.</p>
+    <ul class="links">
+      <li><a href="https://github.com/your-username">GitHub</a></li>
+      <li><a href="https://orcid.org/0000-0000-0000-0000">ORCID</a></li>
+      <li><a href="https://scholar.google.com/">Google Scholar</a></li>
+      <li><a href="mailto:you@example.com">Email</a></li>
+    </ul>
+  </header>
+
+  <main>
+    <h2>Papers</h2>
+    <ul class="papers">
+
+      <!-- ===== Paper: radiation reaction (Nature Communications, 2026) ===== -->
+      <li class="paper">
+        <div class="thumb" aria-hidden="true">
+          <svg viewBox="0 0 420 220">
+            <g stroke="var(--gamma)" stroke-width="2.4" fill="none">
+              <path d="M196 110 L412 110"/><path d="M196 108 L408 90"/><path d="M196 112 L408 130"/>
+              <path d="M196 106 L400 74" stroke-opacity=".55"/><path d="M196 114 L400 146" stroke-opacity=".55"/>
+            </g>
+            <g fill="var(--qc)">
+              <circle cx="104" cy="104" r="4"/><circle cx="122" cy="114" r="4"/><circle cx="140" cy="106" r="4"/>
+              <circle cx="156" cy="113" r="4"/><circle cx="172" cy="108" r="4"/><circle cx="130" cy="100" r="3.5"/><circle cx="148" cy="118" r="3.5"/>
+            </g>
+            <path d="M212 110 C222 70, 232 70, 242 110 S262 150, 272 110 S292 62, 302 110 S322 152, 332 110 S352 80, 362 110 S376 128, 384 110"
+                  stroke="var(--laser)" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="body">
+          <p class="meta"><b>Nature Communications</b> · 2026</p>
+          <h3>Observation of quantum effects on radiation reaction in strong fields</h3>
+          <p class="summary">Electrons fired head-on into one of the world’s most intense lasers lose energy to the gamma rays they emit. More than 600 collisions showed this energy loss beyond 5σ, and the data favour quantum descriptions over the classical one.</p>
+          <!-- EDIT: describe your contribution, or delete this line -->
+          <p class="role">My role: [e.g. ran the experiment, analysed the data, built the simulations].</p>
+          <ul class="tags"><li>Laser–plasma physics</li><li>Strong-field QED</li><li>3 interactive simulations</li></ul>
+          <div class="actions">
+            <a class="btn primary" href="radiation-reaction/index.html">Explore the explainer</a>
+            <a class="btn" href="https://doi.org/10.1038/s41467-025-67918-8">Read the paper</a>
+          </div>
+        </div>
+      </li>
+
+      <!-- ===== TEMPLATE for the next paper: copy this block, uncomment it, and fill it in =====
+      <li class="paper">
+        <div class="thumb" aria-hidden="true">
+          <svg viewBox="0 0 420 220"> ... a simple illustration, or replace this div's contents with an <img> ... </svg>
+        </div>
+        <div class="body">
+          <p class="meta"><b>Journal name</b> · Year</p>
+          <h3>Paper title</h3>
+          <p class="summary">Two sentences in plain language: what was done and what was found.</p>
+          <p class="role">My role: ...</p>
+          <ul class="tags"><li>Topic</li><li>Topic</li></ul>
+          <div class="actions">
+            <a class="btn primary" href="folder-name/index.html">Explore the explainer</a>
+            <a class="btn" href="https://doi.org/...">Read the paper</a>
+          </div>
+        </div>
+      </li>
+      ===== end of template ===== -->
+
+    </ul>
+  </main>
+
+  <!-- EDIT: your name -->
+  <footer>© 2026 Your Name. Interactive explainers are independent educational models, not the original authors’ code or data.</footer>
+</div>
 </body>
 </html>

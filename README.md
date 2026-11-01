@@ -16,8 +16,8 @@ radiation-reaction/        Los et al., Nature Communications 17, 1157 (2026)
 ## Adding a new paper
 
 1. Create a new folder for it (e.g. `my-next-paper/`) with its own `index.html`.
-2. In the top-level `index.html`, copy the commented-out template card, uncomment it, and fill in the details, pointing the "Explore" link at the new folder.
-3. Optionally add a `← All papers` link (`href="../"`) at the top of the paper's own index page.
+2. In the top-level `index.html`, copy the commented-out template card, uncomment it, and fill in the details, pointing the "Explore" link at the new folder's `index.html` (e.g. `my-next-paper/index.html`), so links also work when the files are opened locally.
+3. Optionally add a `← All papers` link (`href="../index.html"`) at the top of the paper's own index page.
 
 ## Publishing
 
