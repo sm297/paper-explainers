@@ -12,19 +12,19 @@
 <style>
 :root{
   --bg:#EDF1F4; --panel:#FFFFFF; --ink:#18212B; --muted:#5A6676; --line:#CDD5DE;
-  --laser:#A3122F; --qc:#2563A8; --gamma:#2F7D4F; --accent:#2563A8;
+  --laser:#A3122F; --qc:#2563A8; --gamma:#2F7D4F; --accent:#2563A8; --chg:#B97C05; --ion:#167A82; --elec:#BE2F72;
   color-scheme: light; box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
-    --laser:#F0506E; --qc:#5C9BE6; --gamma:#5DBB84; --accent:#5C9BE6; color-scheme: dark;
+    --laser:#F0506E; --qc:#5C9BE6; --gamma:#5DBB84; --accent:#5C9BE6; --chg:#F0B23A; --ion:#4CC3C9; --elec:#F06BA8; color-scheme: dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0F151C; --panel:#18212B; --ink:#E4EAF0; --muted:#98A4B3; --line:#2C3846;
-  --laser:#F0506E; --qc:#5C9BE6; --gamma:#5DBB84; --accent:#5C9BE6; color-scheme: dark;
+  --laser:#F0506E; --qc:#5C9BE6; --gamma:#5DBB84; --accent:#5C9BE6; --chg:#F0B23A; --ion:#4CC3C9; --elec:#F06BA8; color-scheme: dark;
 }
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -57,6 +57,23 @@ a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius
 .btn.primary:hover{opacity:.9}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
 .tags li{font-size:.8rem;font-weight:700;color:var(--muted);border:1.5px solid var(--line);border-radius:999px;padding:1px 10px}
+/* ===== Flickering-charge thumbnail (charge fluctuations paper) ===== */
+.flicker .shells,.flicker .nbrs{transform-box:view-box;transform-origin:210px 110px}
+.flicker .shells{animation:fl-shells 5s ease-in-out infinite}
+.flicker .nbrs{animation:fl-nbrs 5s ease-in-out infinite}
+.flicker .z2{animation:fl-z2 5s steps(1,end) infinite}
+.flicker .z3{animation:fl-z3 5s steps(1,end) infinite}
+.flicker .glow{transform-box:view-box;transform-origin:210px 110px;animation:fl-glow 5s ease-out infinite}
+.flicker .e-out{animation:fl-eout 5s linear infinite}
+.flicker .e-in{animation:fl-ein 5s linear infinite}
+@keyframes fl-shells{0%,38%{transform:scale(1)}44%,84%{transform:scale(.67)}90%,100%{transform:scale(1)}}
+@keyframes fl-nbrs{0%,38%{transform:scale(1)}54%,84%{transform:scale(1.08)}98%,100%{transform:scale(1)}}
+@keyframes fl-z2{0%{opacity:1}40%{opacity:0}88%{opacity:1}}
+@keyframes fl-z3{0%{opacity:0}40%{opacity:1}88%{opacity:0}}
+@keyframes fl-glow{0%,39%{opacity:0;transform:scale(1)}40%{opacity:.45;transform:scale(1)}50%{opacity:0;transform:scale(1.9)}87%{opacity:0;transform:scale(1)}88%{opacity:.45;transform:scale(1)}98%,100%{opacity:0;transform:scale(1.9)}}
+@keyframes fl-eout{0%,39.9%{opacity:0;transform:translate(0,0)}40%{opacity:1;transform:translate(0,0)}62%{opacity:0;transform:translate(150px,-48px)}100%{opacity:0;transform:translate(150px,-48px)}}
+@keyframes fl-ein{0%,67.9%{opacity:0;transform:translate(-150px,42px)}68%{opacity:0;transform:translate(-150px,42px)}72%{opacity:1}87.9%{opacity:1;transform:translate(0,0)}88%,100%{opacity:0;transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){.flicker *{animation:none!important}.flicker .z3,.flicker .e-out,.flicker .e-in,.flicker .glow{opacity:0}}
 footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
 @media (max-width:720px){
   .paper{grid-template-columns:minmax(0,1fr)}
@@ -74,8 +91,8 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:v
     <p class="intro">I’m a laser-plasma physicist working on laser wakefield accelerators and the physics experiments they can be used for. These pages try to explain papers I’ve been involved in, with interactive simulations you can explore without reading the equations first.</p>
     <ul class="links">
       <li><a href="https://github.com/sm297">GitHub</a></li>
-      <li><a href="https://orcid.org/0000-0000-0000-0000">ORCID</a></li>
-      <li><a href="https://scholar.google.com/">Google Scholar</a></li>
+      <li><a href="https://orcid.org/0000-0003-2443-4201">ORCID</a></li>
+      <li><a href="https://scholar.google.com/citations?user=MHIYfcIAAAAJ">Google Scholar</a></li>
     </ul>
   </header>
 
@@ -107,6 +124,46 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:v
           <div class="actions">
             <a class="btn primary" href="radiation-reaction/index.html">Explore the explainer</a>
             <a class="btn" href="https://doi.org/10.1038/s41467-025-67918-8">Read the paper</a>
+          </div>
+        </div>
+      </li>
+
+      <!-- ===== Paper: charge-state fluctuations (Physical Review Letters, 2021) ===== -->
+      <li class="paper">
+        <div class="thumb" aria-hidden="true">
+          <svg viewBox="0 0 420 220" class="flicker">
+            <g fill="var(--elec)" opacity=".55">
+              <circle cx="28" cy="34" r="2.2"/><circle cx="74" cy="182" r="2.2"/><circle cx="118" cy="58" r="2.2"/><circle cx="352" cy="40" r="2.2"/>
+              <circle cx="396" cy="168" r="2.2"/><circle cx="300" cy="196" r="2.2"/><circle cx="46" cy="118" r="2.2"/><circle cx="378" cy="96" r="2.2"/>
+              <circle cx="160" cy="200" r="2.2"/><circle cx="250" cy="24" r="2.2"/>
+            </g>
+            <g class="shells" fill="none" stroke="var(--chg)" stroke-width="1.6">
+              <circle cx="210" cy="110" r="34" stroke-opacity=".55"/>
+              <circle cx="210" cy="110" r="62" stroke-opacity=".35"/>
+              <circle cx="210" cy="110" r="90" stroke-opacity=".2"/>
+            </g>
+            <g class="nbrs" fill="var(--ion)">
+              <circle cx="104" cy="74" r="11"/><circle cx="96" cy="140" r="11"/><circle cx="150" cy="186" r="11"/><circle cx="270" cy="188" r="11"/>
+              <circle cx="324" cy="146" r="11"/><circle cx="318" cy="72" r="11"/><circle cx="252" cy="30" r="11"/><circle cx="160" cy="30" r="11"/>
+            </g>
+            <circle class="glow" cx="210" cy="110" r="22" fill="var(--chg)" opacity="0"/>
+            <circle cx="210" cy="110" r="20" fill="var(--chg)"/>
+            <g font-family="Atkinson Hyperlegible, system-ui, sans-serif" font-weight="700" font-size="17" text-anchor="middle" fill="var(--panel)">
+              <text class="z2" x="210" y="116">2+</text>
+              <text class="z3" x="210" y="116" opacity="0">3+</text>
+            </g>
+            <circle class="e-out" cx="210" cy="110" r="4" fill="var(--elec)" opacity="0"/>
+            <circle class="e-in" cx="210" cy="110" r="4" fill="var(--elec)" opacity="0"/>
+          </svg>
+        </div>
+        <div class="body">
+          <p class="meta"><b>Physical Review Letters</b> · 2021</p>
+          <h3>Temperature equilibration due to charge state fluctuations in dense plasmas</h3>
+          <p class="summary">In a dense plasma, ions are ionized and recombined over and over, so each ion’s charge flickers and its neighbours feel a changing push. We showed that this flicker carries energy between hot electrons and cold ions, and can be as fast as direct collisions.</p>
+          <ul class="tags"><li>Dense plasmas</li><li>Warm dense matter</li><li>4 interactive figures</li></ul>
+          <div class="actions">
+            <a class="btn primary" href="charge-fluctuations/index.html">Explore the explainer</a>
+            <a class="btn" href="https://doi.org/10.1103/PhysRevLett.127.035002">Read the paper</a>
           </div>
         </div>
       </li>
