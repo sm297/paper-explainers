@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="An interactive explainer of our paper, Baggott, Rose & Mangles, Phys. Rev. Lett. 127, 035002 (2021): how charge-state fluctuations transfer energy between electrons and ions in dense plasmas.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flickering charges: how ions and electrons trade heat in dense plasmas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'},options:{enableMenu:false}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="back"><a href="../">← All explainers</a></p>
+    <p class="cite">An interactive explainer of our paper, Baggott, Rose &amp; Mangles, <i>Phys. Rev. Lett.</i> <b>127</b>, 035002 (2021)</p>
+    <h1>When an ion’s charge flickers, heat moves</h1>
+    <p class="lede">In a dense plasma, bound electrons are knocked off and recaptured over and over. Each time, an ion’s charge changes, and its neighbours feel a different push. In this paper we show that this restless flicker is a route for energy to flow between hot electrons and cold ions, and that it can be as fast as ordinary collisions.</p>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="hero" aria-label="Animation: a central ion whose charge switches between two values, pushing surrounding ions outward when its charge is high" role="img"></canvas>
+    <div class="stage-bar">
+      <div class="key">
+        <span><i class="dot" style="background:var(--chg)"></i>ion with fluctuating charge: <span class="zread" id="heroZ">C²⁺</span></span>
+        <span><i class="dot" style="background:var(--ion)"></i>neighbouring ions</span>
+        <span><i class="dot" style="background:var(--elec)"></i>free electrons</span>
+      </div>
+      <button class="btn" id="heroToggle" type="button">Pause</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="wrap">
+  <h2>Two temperatures that won’t stay apart</h2>
+  <p>Many ways of making matter extremely hot and dense heat only one species. An x-ray free-electron laser or an optical laser dumps its energy into electrons, leaving the ions comparatively cold. A shock wave does the opposite: it heats ions and barely touches the electrons. For a while the plasma has two temperatures, \(T_e\) and \(T_i\), and how quickly they meet controls what experiments measure, how astrophysical shocks glow and whether fusion fuel ignites.</p>
+  <p>The textbook picture, from Landau and Spitzer, is binary collisions: a light, fast electron bounces off a heavy, slow ion and hands over a sliver of energy each time. Modern versions describe the same physics as electron and ion density fluctuations rubbing against each other. Yet measured equilibration times in apparently similar conditions range from under a picosecond to nanoseconds. Something is missing.</p>
+  <p>Almost every calculation treats the ionization state through an average: a mean charge \(\bar Z\), or at best a steady population of charge states. Our starting point is that an individual ion never sits at the average. Its charge jumps up on collisional ionization and down on recombination, even when the plasma as a whole is in steady state.</p>
+
+  <h2>The cycle that pumps energy</h2>
+  <p>Bound electrons screen an ion from its neighbours, so changing the charge changes how hard the ion pushes on them. The animation above follows one cycle:</p>
+  <ol class="steps">
+    <li>A free electron ionizes the central ion. It pays the energy cost, and the ion’s repulsion of its neighbours suddenly grows.</li>
+    <li>The neighbours are shoved outward and pick up kinetic energy.</li>
+    <li>The ion recaptures an electron. Its charge drops and its grip weakens.</li>
+    <li>The neighbours drift back in, but they keep some of the energy they gained. Net effect: energy has moved from electrons to ions.</li>
+  </ol>
+  <p>Run backwards, the same cycle takes energy from ions: if the neighbours happen to crowd in, the local field lowers the ionization energy, making ionization easier; if they spread out, recombination is favoured, and the electrons collect more energy on recombination than they spent on ionization. When \(T_e = T_i\) the two directions cancel exactly.</p>
+  <p>Ultracold-plasma physicists know a cousin of this effect: the burst of heating when atoms are suddenly ionized, called disorder-induced heating. Here it happens continuously and in both directions.</p>
+
+  <h2>A charge that random-walks</h2>
+  <p>To compute anything, you need the statistics of the flicker. We model each ion’s charge as a random walk: it steps up by one with the collisional ionization rate and down by one with the recombination rate. Hydrogen is the cleanest case, with only two states, neutral and bare proton. If the mean time to ionize is \(\tau_\alpha\) and the mean time to recombine is \(\tau_\beta\), the charge fluctuations forget themselves exponentially:</p>
+  <div class="eq">\[\langle \delta Z(t)\,\delta Z(0)\rangle=\frac{\tau_\alpha\tau_\beta}{(\tau_\alpha+\tau_\beta)^2}\,\exp\!\left[-t\left(\frac{1}{\tau_\alpha}+\frac{1}{\tau_\beta}\right)\right]\]</div>
+  <p>The figure simulates that random walk directly. Drag the sliders and check the simulated correlation against the formula.</p>
+</section>
+
+<section class="wide">
+  <figure id="figTel">
+    <div class="controls">
+      <div class="ctl"><label for="ta"><span>Ionization time τ<sub>α</sub></span> <output id="taO"></output></label><input id="ta" type="range" min="-1" max="1" step="0.01" value="0"></div>
+      <div class="ctl"><label for="tb"><span>Recombination time τ<sub>β</sub></span> <output id="tbO"></output></label><input id="tb" type="range" min="-1" max="1" step="0.01" value="0.3"></div>
+    </div>
+    <div class="plots two">
+      <div class="pl"><h3>Charge of one hydrogen ion over time</h3><svg class="plot" id="telTrace"></svg></div>
+      <div class="pl"><h3>Charge correlation: simulated vs formula</h3><svg class="plot" id="telCorr"></svg></div>
+    </div>
+    <div class="readout"><span>Mean ionization <b id="telZ"></b></span><span>Fluctuation size ⟨δZ²⟩ <b id="telA"></b></span><span>Correlation time <b id="telT"></b></span><button class="btn" id="telRun" type="button">Simulate again</button></div>
+    <figcaption><b>Random telegraph charge.</b> Left: a stochastic simulation of one ion jumping between H and H⁺. Right: the measured autocorrelation (dots) against the analytic result (line). The fluctuations are largest when the ion spends about equal time in each state, and they die out when the plasma is almost fully ionized or almost neutral. Times are in femtoseconds, typical of liquid-density hydrogen.</figcaption>
+  </figure>
+</section>
+
+<section class="wrap">
+  <p>For heavier atoms there are more rungs on the ladder, so the correlation becomes a sum of exponentials, one per relaxation mode of the walk. Each mode has an amplitude \(A_i\) and a lifetime \(\tau_i\), and its contribution to the spectrum is a Lorentzian:</p>
+  <div class="eq">\[\langle \delta Z(\omega)\,\delta Z(-\omega)\rangle=\frac{1}{\pi}\sum_i \frac{A_i\,\tau_i}{1+\omega^2\tau_i^2}\]</div>
+
+  <h2>Why an indirect route can win</h2>
+  <p>Electrons and ions exchange energy only at frequencies where both can move. Electrons oscillate near the electron plasma frequency; ions near the far lower ion plasma frequency. For hydrogen the two differ by \(\sqrt{m_p/m_e}\approx 43\), and the electron and ion spectra barely overlap. That mismatch is why direct electron–ion coupling is so slow.</p>
+  <p>Charge fluctuations are different. Their spectrum is set by ionization and recombination rates, which in dense plasmas often fall right where the ions respond. Even though charge fluctuations are much weaker than electron density fluctuations, the better frequency match can make up for it. This is the key physical insight behind the second figure in our paper.</p>
+</section>
+
+<section class="wide">
+  <figure id="figSpec">
+    <div class="controls">
+      <div class="ctl"><label for="gam"><span>Charge fluctuation rate 1/τ</span> <output id="gamO"></output></label><input id="gam" type="range" min="-3" max="3" step="0.01" value="-1.4"></div>
+    </div>
+    <div class="plots two">
+      <div class="pl"><h3>Response spectra, each scaled to its own peak</h3><svg class="plot" id="specA"></svg></div>
+      <div class="pl"><h3>Overlap with the ion spectrum</h3><svg class="plot" id="specB"></svg></div>
+    </div>
+    <div class="pl" style="margin-top:1rem"><h3>Coupling strength vs fluctuation rate</h3><svg class="plot" id="specC"></svg></div>
+    <figcaption><b>Frequency matching.</b> Frequencies are in units of the ion plasma frequency ω<sub>pi</sub>; the electron peak sits about 43 times higher, as in hydrogen. Top right: the products of the ion spectrum with the electron and charge spectra, on a log scale, show where energy can actually change hands. Bottom: the integrated overlap, which peaks when charge fluctuations happen at roughly the ion frequency. Shapes are schematic damped-oscillator and Lorentzian forms chosen to illustrate the idea, not the response functions we computed in the paper.</figcaption>
+  </figure>
+</section>
+
+<section class="wrap">
+  <h2>The exchange rate, and which way it runs</h2>
+  <p>We derive the rate using linear response theory, by the same steps used for density-fluctuation theories of direct collisions. A change \(\delta Z\) in an ion’s charge changes the Coulomb potential around it; the neighbouring ions respond through their response function \(\chi_{ii}\); and the charge fluctuations themselves obey a fluctuation–dissipation theorem with a charge response function \(\chi_{ZZ}\). Adding the forward process and its inverse gives the net rate at which ions gain energy:</p>
+  <div class="eq">\[\frac{dE_i}{dt}=n_i\!\int\!\frac{d\mathbf{k}}{(2\pi)^3}\!\int\!\frac{d\omega}{2\pi}\,\hbar\omega\left(\frac{4\pi e^2}{k^2}\right)^{\!2}\operatorname{Im}\chi_{ii}(\mathbf{k},\omega)\,\operatorname{Im}\chi_{ZZ}(\omega)\left[\coth\frac{\hbar\omega}{2T_e}-\coth\frac{\hbar\omega}{2T_i}\right]\]</div>
+  <p>This has the same form as the familiar formula for direct collisions, with the electron spectrum swapped for the charge-state spectrum. The bracket at the end decides the direction of flow. At the frequencies that matter for ions, \(\hbar\omega\) is tiny compared with either temperature and the bracket reduces to something proportional to \(T_e - T_i\). It vanishes in equilibrium and flips sign when the ions are hotter.</p>
+</section>
+
+<section class="wide">
+  <figure id="figCoth">
+    <div class="controls">
+      <div class="ctl"><label for="te1"><span>Electron temperature T<sub>e</sub></span> <output id="te1O"></output></label><input id="te1" type="range" min="-0.3" max="1.7" step="0.01" value="1"></div>
+      <div class="ctl"><label for="ti1"><span>Ion temperature T<sub>i</sub></span> <output id="ti1O"></output></label><input id="ti1" type="range" min="-0.3" max="1.7" step="0.01" value="0"></div>
+    </div>
+    <svg class="plot" id="cothP"></svg>
+    <div class="readout"><span>Direction <b id="cothDir"></b></span><span>Low-frequency limit 2(T<sub>e</sub>−T<sub>i</sub>) <b id="cothLim"></b></span></div>
+    <figcaption><b>The detailed-balance factor</b> ħω[coth(ħω/2T<sub>e</sub>) − coth(ħω/2T<sub>i</sub>)] in eV, plotted against the energy quantum ħω. Ion motion lives at the far left of this plot, where the curve is flat. Set the two temperatures equal and it vanishes everywhere.</figcaption>
+  </figure>
+</section>
+
+<section class="wrap">
+  <p>For liquid-density hydrogen with 1 eV ions, we find that this channel is comparable to the Landau–Spitzer rate for direct collisions as long as the electron temperature stays below about the ionization energy. Hotter than that, the hydrogen is almost fully ionized, there is little left to flicker, and the channel fades.</p>
+
+  <h2>Carbon: more shells, richer behaviour</h2>
+  <p>With six electrons, carbon’s random walk has seven states and no tidy formula, so we simulate it by Monte Carlo and fit the correlation function with a few exponentials. At any given temperature only a handful of charge states are populated, so one or two modes dominate. They can be traced to three families of fluctuations: the 2p electrons (charge 0–2), the 2s electrons (2–4) and the 1s electrons (4–6).</p>
+  <p>The lab below rebuilds a simplified version of that calculation in your browser. It solves for the steady charge-state populations, finds the relaxation modes of the random walk exactly from its rate matrix, and checks how well each mode is matched to the ion plasma frequency. Try sweeping the electron temperature and watch where the coupling peaks.</p>
+</section>
+
+<section class="wide">
+  <figure id="figC">
+    <div class="controls">
+      <div class="ctl"><label for="cT"><span>Electron temperature T<sub>e</sub></span> <output id="cTO"></output></label><input id="cT" type="range" min="0" max="2.48" step="0.01" value="1.3"></div>
+      <div class="ctl"><label for="cRho"><span>Mass density</span> <output id="cRhoO"></output></label><input id="cRho" type="range" min="-1" max="0.6" step="0.002" value="0.354"></div>
+      <div class="ctl"><label for="cIPD"><span>Pressure ionization strength</span> <output id="cIPDO"></output></label><input id="cIPD" type="range" min="0" max="1" step="0.01" value="0.3"></div>
+    </div>
+    <div class="plots two">
+      <div class="pl"><h3>Charge-state populations</h3><svg class="plot" id="cOcc"></svg></div>
+      <div class="pl"><h3>Fluctuation modes: lifetime and size</h3><svg class="plot" id="cTau"></svg></div>
+      <div class="pl"><h3>Coupling to ion motion</h3><svg class="plot" id="cG"></svg></div>
+      <div class="pl"><h3>One ion’s charge at the chosen temperature</h3><svg class="plot" id="cMC"></svg></div>
+    </div>
+    <div class="readout"><span>Mean charge <b id="cZ"></b></span><span>⟨δZ²⟩ <b id="cV"></b></span><span>1/ω<sub>pi</sub> <b id="cW"></b></span><span>Pressure-ionized states <b id="cP"></b></span><button class="btn" id="cRun" type="button">Simulate again</button></div>
+    <div class="table-scroll"><table class="comp" id="cTab"></table></div>
+    <figcaption><b>A toy carbon plasma.</b> Populations from Saha balance; ionization rates from a Lotz-type formula; recombination fixed by detailed balance; pressure ionization as a depression of each ionization energy, set as a percentage of the ion-sphere model. In the lifetime plot each circle is one relaxation mode, its area proportional to the mode’s amplitude A<sub>i</sub>; the dashed line is the ion response time 1/ω<sub>pi</sub>. “Coupling” is a dimensionless figure of merit, ∑A<sub>i</sub>·2γ<sub>i</sub>ω<sub>pi</sub>/(γ<sub>i</sub>²+ω<sub>pi</sub>²) with γ<sub>i</sub> = 1/τ<sub>i</sub>, which rewards big fluctuations at the ion frequency. Numbers are indicative only; this is not the code we used for the paper and it omits statistical weights and the full Stewart–Pyatt model.</figcaption>
+  </figure>
+</section>
+
+<section class="wrap">
+  <p>You should see the coupling peak at a modest temperature, where the 2s and 2p electrons are being stripped and recaptured on femtosecond timescales close to 1/ω<sub>pi</sub>. Push higher and the 1s electrons start to fluctuate, with large amplitude, but their ionization is so slow that the modes sit far above the dashed line and barely couple. That mirrors our carbon result in the paper: the peak transfer rate comes at lower temperature, driven by the 2s shell, and the window where the mechanism matters is limited.</p>
+  <p>In solid-density carbon heated by an XFEL, measured equilibration was much faster than older theories predicted. We find the charge-fluctuation rate there is comparable to direct electron–ion collisions, a candidate for part of the gap.</p>
+
+  <h2>Metals and shocks: when the flicker switches off</h2>
+  <p>Now drag the pressure-ionization slider to the right. Squeeze atoms hard enough and their outer electrons are no longer bound at all; they join the conduction band. That is the normal state of a metal. A shell that cannot hold electrons cannot flicker, so whole families of modes vanish and the coupling collapses.</p>
+  <p>In the paper we show this for solid-density aluminium with hot ions and cooler electrons. The pressure-ionized M shell is gone, and the cool electrons lack the energy to ionize the L shell, so the charge-fluctuation channel is strongly suppressed. That offers a tidy explanation for a puzzle: shock-heated metals have shown slow equilibration, while XFEL-heated carbon equilibrated fast. Different materials and heating routes switch this channel on or off.</p>
+
+  <div class="note">One more consequence we point out in the paper: if intense radiation rather than collisions drives the ionization, the same mechanism would couple the radiation field directly to the ions, bypassing the electrons.</div>
+
+  <h2>What to take away</h2>
+  <p>Partially ionized dense plasmas have a third player in temperature equilibration: the fluctuating charge of individual ions. It acts as a go-between that is well tuned to ion motion, so despite being an indirect process it can rival direct collisions. Its strength depends sharply on temperature, atomic shell structure and pressure ionization, and that sensitivity is exactly the kind of thing that could make measured equilibration times scatter from one experiment to the next.</p>
+  <p>Our calculations treat the ion response in the random phase approximation and the fluctuations with a single-step random walk, so the numbers are estimates rather than final predictions. The main contribution of the paper is the mechanism and the framework for computing it.</p>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Based on R. A. Baggott, S. J. Rose and S. P. D. Mangles, “Temperature Equilibration Due to Charge State Fluctuations in Dense Plasmas,” <i>Phys. Rev. Lett.</i> 127, 035002 (2021). <a href="https://doi.org/10.1103/PhysRevLett.127.035002">doi:10.1103/PhysRevLett.127.035002</a>; preprint <a href="https://arxiv.org/abs/2103.03616">arXiv:2103.03616</a>.</p>
+    <p>All plots on this page are computed live from simplified models written for this explainer. They illustrate the reasoning in our paper; for the published figures and numbers, see the paper itself.</p>
+    <p><a href="../">← Back to all paper explainers</a></p>
+    <p>This explainer page, including its text, interactive models and code, was produced with the help of <a href="https://claude.ai">Claude</a>, an AI model made by Anthropic.</p>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>
