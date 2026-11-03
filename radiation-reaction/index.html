@@ -43,6 +43,9 @@ a{color:var(--accent)}
 .prose{max-width:66ch;margin-top:30px}
 .prose p{margin:0 0 1em}
 .prose p:first-child{font-size:1.15rem}
+.why{border-left:4px solid var(--gamma);padding:2px 0 2px 16px;margin:0 0 1.2em}
+.why h2{font-size:1.2rem;margin:0 0 .35em}
+.why p{margin:0}
 .pages{display:grid;gap:16px;margin-top:34px;padding:0;list-style:none;counter-reset:page}
 .page{counter-increment:page}
 .page a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 20px;align-items:start;background:var(--panel);border-radius:14px;padding:22px 20px;text-decoration:none;color:var(--ink);border:1.5px solid transparent;transition:border-color .15s}
@@ -79,7 +82,7 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:v
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="../">← All papers</a>
+  <a class="back" href="../index.html">← All papers</a>
   <header class="hero">
     <div>
       <p class="kicker">An interactive guide to a 2026 Nature Communications paper</p>
@@ -112,6 +115,10 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:v
 
   <section class="prose">
     <p>Shake an electron hard enough and it glows, and every bit of light it gives off pushes it back a little. Physicists call this push radiation reaction. Under ordinary conditions it’s far too small to notice. But in the field of the world’s most intense lasers, an electron can lose a large share of its energy in a few femtoseconds, and how much it loses depends on whether you treat the light classically or as quantum photons.</p>
+    <div class="why">
+      <h2>Why test it?</h2>
+      <p>Fields this strong aren’t only made in laboratories. They surround pulsars and magnetars, where radiation reaction limits the cascades of electrons and positrons that fill their magnetospheres, and they’ll be reached by the next generation of multi-petawatt lasers and at the collision points of future particle colliders. Predictions for all of these, and for the compact gamma-ray sources being developed for medical imaging and nuclear physics, depend on which model of radiation reaction is right. Earlier experiments with lasers tried to test it, but with fewer than ten successful collisions each, they couldn’t tell the models apart with confidence. Experiments that sent high-energy particle beams through aligned crystals, whose atomic fields are similarly strong for particles moving at nearly the speed of light, found evidence of quantum radiation reaction in the gamma rays emitted, but didn’t observe it in the particles’ own energy spectra.</p>
+    </div>
     <p>In January 2026, a team led from Imperial College London reported the clearest test yet. At the Gemini laser in the UK, they fired electron beams moving at nearly the speed of light head-on into a laser pulse more than 600 times. The electrons that collided came out with measurably less energy, a result significant beyond the 5σ level physicists require to call something an observation. When they compared models, the quantum descriptions explained the data better than the classical one.</p>
     <p>These pages rebuild the paper’s main ideas as small simulations you can play with. They’re toy models: simplified, but built on the same physics. Each page explains what it leaves out.</p>
   </section>
@@ -144,7 +151,7 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:v
   </ol>
 
   <footer>
-    Based on E. E. Los et al., “Observation of quantum effects on radiation reaction in strong fields,” <i>Nature Communications</i> <b>17</b>, 1157 (2026), <a href="https://doi.org/10.1038/s41467-025-67918-8">doi:10.1038/s41467-025-67918-8</a>. These are independent educational simulations, not the authors’ code or data, and their numbers are illustrative.
+    Based on E. E. Los et al., “Observation of quantum effects on radiation reaction in strong fields,” <i>Nature Communications</i> <b>17</b>, 1157 (2026), <a href="https://doi.org/10.1038/s41467-025-67918-8">doi:10.1038/s41467-025-67918-8</a>. These are independent educational simulations, not the authors’ code or data, and their numbers are illustrative. The pages and simulations were developed with the help of Claude, an AI model made by Anthropic.
   </footer>
 </div>
 </body>
