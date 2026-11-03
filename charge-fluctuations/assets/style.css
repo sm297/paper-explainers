@@ -77,6 +77,25 @@ button.btn:hover{border-color:var(--ion)}
 table.comp{border-collapse:collapse;font-family:var(--sans);font-size:.93rem;margin-top:.5rem;min-width:18rem}
 table.comp th,table.comp td{padding:.25rem .9rem .25rem 0;text-align:left;font-variant-numeric:tabular-nums}
 table.comp th{font-weight:500;color:var(--muted);border-bottom:1px solid var(--rule)}
+table.cycle{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:.97rem;line-height:1.45;margin:1.4rem 0 1.5rem;background:var(--panel);border:1px solid var(--rule)}
+table.cycle caption{caption-side:top;text-align:left;font-size:.93rem;color:var(--muted);padding:0 0 .45rem}
+table.cycle th,table.cycle td{padding:.65rem .8rem;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+table.cycle thead th{font-weight:600;border-bottom:2px solid var(--rule)}
+table.cycle thead th.fwd{color:var(--elec)} table.cycle thead th.rev{color:var(--ion)}
+table.cycle tbody th{font-weight:600;width:9.5rem}
+table.cycle td b{font-weight:600}
+table.cycle tr.net th,table.cycle tr.net td{background:color-mix(in srgb,var(--chg) 10%,var(--panel));border-bottom:0}
+table.cycle tr.net td{font-weight:500}
+@media (max-width:600px){
+  table.cycle,table.cycle tbody,table.cycle tr,table.cycle th,table.cycle td{display:block;width:auto}
+  table.cycle thead{display:none}
+  table.cycle caption{display:block}
+  table.cycle tr{border-bottom:1px solid var(--rule)}
+  table.cycle tbody th{border-bottom:0;padding-bottom:.2rem;width:auto}
+  table.cycle td{border-bottom:0;padding-top:.3rem}
+  table.cycle td::before{content:attr(data-label);display:block;font-size:.82rem;font-weight:600;margin-bottom:.1rem}
+  table.cycle td:nth-of-type(1)::before{color:var(--elec)} table.cycle td:nth-of-type(2)::before{color:var(--ion)}
+}
 footer{border-top:1px solid var(--rule);margin-top:4rem;padding:1.6rem 0 3rem;font-family:var(--sans);font-size:.93rem;color:var(--muted)}
 @media (max-width:560px){
   body{font-size:1rem}

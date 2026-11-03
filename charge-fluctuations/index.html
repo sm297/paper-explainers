@@ -43,14 +43,29 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg
   <p>Almost every calculation treats the ionization state through an average: a mean charge \(\bar Z\), or at best a steady population of charge states. Our starting point is that an individual ion never sits at the average. Its charge jumps up on collisional ionization and down on recombination, even when the plasma as a whole is in steady state.</p>
 
   <h2>The cycle that pumps energy</h2>
-  <p>Bound electrons screen an ion from its neighbours, so changing the charge changes how hard the ion pushes on them. The animation above follows one cycle:</p>
-  <ol class="steps">
-    <li>A free electron ionizes the central ion. It pays the energy cost, and the ion’s repulsion of its neighbours suddenly grows.</li>
-    <li>The neighbours are shoved outward and pick up kinetic energy.</li>
-    <li>The ion recaptures an electron. Its charge drops and its grip weakens.</li>
-    <li>The neighbours drift back in, but they keep some of the energy they gained. Net effect: energy has moved from electrons to ions.</li>
-  </ol>
-  <p>Run backwards, the same cycle takes energy from ions: if the neighbours happen to crowd in, the local field lowers the ionization energy, making ionization easier; if they spread out, recombination is favoured, and the electrons collect more energy on recombination than they spent on ionization. When \(T_e = T_i\) the two directions cancel exactly.</p>
+  <p>Bound electrons screen an ion from its neighbours, so changing an ion’s charge changes how hard it pushes on the ions around it. This works both ways. Raising the charge of an ion that has another positive ion close by costs extra Coulomb energy, so the energy needed to ionize it depends on where its neighbouring ions are. That shared link lets energy flow in either direction through the same four-stage cycle. The animation above shows the forward version.</p>
+  <table class="cycle">
+    <caption>One cycle of ionization and recombination, run in each direction</caption>
+    <thead><tr><th scope="col">Stage</th><th scope="col" class="fwd">Forward: electrons → ions</th><th scope="col" class="rev">Reverse: ions → electrons</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">1. Ionization</th>
+        <td data-label="Forward: electrons → ions">Neighbouring ion is <b>close</b>. Ionizing costs extra Coulomb energy, so the electron pays <b>a lot</b>.</td>
+        <td data-label="Reverse: ions → electrons">Neighbouring ion is <b>far</b>. Ionizing costs little extra, so the electron pays <b>a little</b>.</td></tr>
+      <tr><th scope="row">2. Neighbouring ion moves</th>
+        <td data-label="Forward: electrons → ions">Stronger repulsion pushes the neighbouring ion <b>out</b>. It <b>gains</b> kinetic energy.</td>
+        <td data-label="Reverse: ions → electrons">Neighbouring ion moves <b>in</b> against the stronger repulsion. It <b>loses</b> kinetic energy.</td></tr>
+      <tr><th scope="row">3. Recombination</th>
+        <td data-label="Forward: electrons → ions">Neighbouring ion is <b>far</b>. The electron gets back <b>a little</b>.</td>
+        <td data-label="Reverse: ions → electrons">Neighbouring ion is <b>close</b>. The electron gets back <b>a lot</b>.</td></tr>
+      <tr><th scope="row">4. Reset</th>
+        <td data-label="Forward: electrons → ions">Repulsion is weak again. The neighbouring ion drifts back in, <b>keeping</b> its extra energy.</td>
+        <td data-label="Reverse: ions → electrons">Repulsion is weak again. The neighbouring ion drifts back out, <b>without</b> the energy it lost.</td></tr>
+      <tr class="net"><th scope="row">Net</th>
+        <td data-label="Forward: electrons → ions">Electrons lose energy, ions gain it.</td>
+        <td data-label="Reverse: ions → electrons">Ions lose energy, electrons gain it.</td></tr>
+    </tbody>
+  </table>
+  <p><b>What decides the direction.</b> In both columns the extra Coulomb energy is the shift in ionization energy caused by the neighbouring ion. Hot electrons make the forward ordering more common, by driving charge changes that push the ions. Hot ions make the reverse ordering more common, because their motion shifts the ionization energy and so biases when ionization and recombination happen. When \(T_e = T_i\) the two are equally likely and cancel.</p>
   <p>Ultracold-plasma physicists know a cousin of this effect: the burst of heating when atoms are suddenly ionized, called disorder-induced heating. Here it happens continuously and in both directions.</p>
 
   <h2>A charge that random-walks</h2>
@@ -70,7 +85,7 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg
       <div class="pl"><h3>Charge correlation: simulated vs formula</h3><svg class="plot" id="telCorr"></svg></div>
     </div>
     <div class="readout"><span>Mean ionization <b id="telZ"></b></span><span>Fluctuation size ⟨δZ²⟩ <b id="telA"></b></span><span>Correlation time <b id="telT"></b></span><button class="btn" id="telRun" type="button">Simulate again</button></div>
-    <figcaption><b>Random telegraph charge.</b> Left: a stochastic simulation of one ion jumping between H and H⁺. Right: the measured autocorrelation (dots) against the analytic result (line). The fluctuations are largest when the ion spends about equal time in each state, and they die out when the plasma is almost fully ionized or almost neutral. Times are in femtoseconds, typical of liquid-density hydrogen.</figcaption>
+    <figcaption><b>Random telegraph charge.</b> Left: a stochastic simulation of one ion jumping between H and H⁺. Right: the measured autocorrelation (dots) against the analytic result (line). The fluctuations are largest when the ion spends about equal time in each state, and they die out when the plasma is almost fully ionized or almost neutral. When one time is much longer than the other, say τ<sub>α</sub> ≫ τ<sub>β</sub>, the ion sits neutral for about τ<sub>α</sub> between brief ionized spells lasting about τ<sub>β</sub>. The time axis stretches to show several of those long waits, while the correlation time tends to the shorter of the two times. Times are in femtoseconds, typical of liquid-density hydrogen.</figcaption>
   </figure>
 </section>
 
@@ -87,19 +102,20 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg
   <figure id="figSpec">
     <div class="controls">
       <div class="ctl"><label for="gam"><span>Charge fluctuation rate 1/τ</span> <output id="gamO"></output></label><input id="gam" type="range" min="-3" max="3" step="0.01" value="-1.4"></div>
+      <div class="ctl"><label for="amp"><span>Charge fluctuation amplitude A</span> <output id="ampO"></output></label><input id="amp" type="range" min="0.01" max="0.25" step="0.005" value="0.25"></div>
     </div>
     <div class="plots two">
-      <div class="pl"><h3>Response spectra, each scaled to its own peak</h3><svg class="plot" id="specA"></svg></div>
+      <div class="pl"><h3>Response spectra (ions and electrons scaled to peak 1)</h3><svg class="plot" id="specA"></svg></div>
       <div class="pl"><h3>Overlap with the ion spectrum</h3><svg class="plot" id="specB"></svg></div>
     </div>
     <div class="pl" style="margin-top:1rem"><h3>Coupling strength vs fluctuation rate</h3><svg class="plot" id="specC"></svg></div>
-    <figcaption><b>Frequency matching.</b> Frequencies are in units of the ion plasma frequency ω<sub>pi</sub>; the electron peak sits about 43 times higher, as in hydrogen. Top right: the products of the ion spectrum with the electron and charge spectra, on a log scale, show where energy can actually change hands. Bottom: the integrated overlap, which peaks when charge fluctuations happen at roughly the ion frequency. Shapes are schematic damped-oscillator and Lorentzian forms chosen to illustrate the idea, not the response functions we computed in the paper.</figcaption>
+    <figcaption><b>Frequency matching.</b> Frequencies are in units of the ion plasma frequency ω<sub>pi</sub>; the electron peak sits about 43 times higher, as in hydrogen. Top right: the products of the ion spectrum with the electron and charge spectra, on a log scale, show where energy can actually change hands. Bottom: the integrated overlap, which peaks when charge fluctuations happen at roughly the ion frequency. The amplitude slider scales the charge spectrum by A; 0.25 is the largest value possible for hydrogen, reached when the ion is ionized half the time. Bigger fluctuations mean more overlap and stronger coupling. Shapes are schematic damped-oscillator and Lorentzian forms chosen to illustrate the idea, not the response functions we computed in the paper. In reality the ion and electron responses also depend on wavenumber k, density and temperature; here each is fixed at one representative shape.</figcaption>
   </figure>
 </section>
 
 <section class="wrap">
   <h2>The exchange rate, and which way it runs</h2>
-  <p>We derive the rate using linear response theory, by the same steps used for density-fluctuation theories of direct collisions. A change \(\delta Z\) in an ion’s charge changes the Coulomb potential around it; the neighbouring ions respond through their response function \(\chi_{ii}\); and the charge fluctuations themselves obey a fluctuation–dissipation theorem with a charge response function \(\chi_{ZZ}\). Adding the forward process and its inverse gives the net rate at which ions gain energy:</p>
+  <p>We derive the rate using linear response theory, by the same steps used for density-fluctuation theories of direct collisions. A change \(\delta Z\) in an ion’s charge changes the Coulomb potential around it; the neighbouring ions respond through their response function \(\chi_{ii}\); and the charge fluctuations themselves obey a fluctuation–dissipation theorem with a charge response function \(\chi_{ZZ}\). That gives the forward rate. For the reverse process, the thermal motion of the ions shifts the ionization energy by an amount \(\delta I\), the same extra Coulomb energy as in the table above, and this biases when ionization and recombination happen. Adding the two gives the net rate at which ions gain energy:</p>
   <div class="eq">\[\frac{dE_i}{dt}=n_i\!\int\!\frac{d\mathbf{k}}{(2\pi)^3}\!\int\!\frac{d\omega}{2\pi}\,\hbar\omega\left(\frac{4\pi e^2}{k^2}\right)^{\!2}\operatorname{Im}\chi_{ii}(\mathbf{k},\omega)\,\operatorname{Im}\chi_{ZZ}(\omega)\left[\coth\frac{\hbar\omega}{2T_e}-\coth\frac{\hbar\omega}{2T_i}\right]\]</div>
   <p>This has the same form as the familiar formula for direct collisions, with the electron spectrum swapped for the charge-state spectrum. The bracket at the end decides the direction of flow. At the frequencies that matter for ions, \(\hbar\omega\) is tiny compared with either temperature and the bracket reduces to something proportional to \(T_e - T_i\). It vanishes in equilibrium and flips sign when the ions are hotter.</p>
 </section>
@@ -121,7 +137,7 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg
 
   <h2>Carbon: more shells, richer behaviour</h2>
   <p>With six electrons, carbon’s random walk has seven states and no tidy formula, so we simulate it by Monte Carlo and fit the correlation function with a few exponentials. At any given temperature only a handful of charge states are populated, so one or two modes dominate. They can be traced to three families of fluctuations: the 2p electrons (charge 0–2), the 2s electrons (2–4) and the 1s electrons (4–6).</p>
-  <p>The lab below rebuilds a simplified version of that calculation in your browser. It solves for the steady charge-state populations, finds the relaxation modes of the random walk exactly from its rate matrix, and checks how well each mode is matched to the ion plasma frequency. Try sweeping the electron temperature and watch where the coupling peaks.</p>
+  <p>The lab below rebuilds a simplified version of that calculation in your browser. It solves for the steady charge-state populations, finds the relaxation modes of the random walk exactly from its rate matrix, and checks how well each mode is matched to the ion plasma frequency. Try sweeping the electron temperature and watch where the coupling peaks. The lifetime plot draws one line per shell, with hydrogen for comparison: one shell, one line.</p>
 </section>
 
 <section class="wide">
@@ -133,13 +149,13 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg
     </div>
     <div class="plots two">
       <div class="pl"><h3>Charge-state populations</h3><svg class="plot" id="cOcc"></svg></div>
-      <div class="pl"><h3>Fluctuation modes: lifetime and size</h3><svg class="plot" id="cTau"></svg></div>
+      <div class="pl"><h3>Fluctuation modes by shell: lifetime and size</h3><svg class="plot" id="cTau"></svg></div>
       <div class="pl"><h3>Coupling to ion motion</h3><svg class="plot" id="cG"></svg></div>
       <div class="pl"><h3>One ion’s charge at the chosen temperature</h3><svg class="plot" id="cMC"></svg></div>
     </div>
     <div class="readout"><span>Mean charge <b id="cZ"></b></span><span>⟨δZ²⟩ <b id="cV"></b></span><span>1/ω<sub>pi</sub> <b id="cW"></b></span><span>Pressure-ionized states <b id="cP"></b></span><button class="btn" id="cRun" type="button">Simulate again</button></div>
     <div class="table-scroll"><table class="comp" id="cTab"></table></div>
-    <figcaption><b>A toy carbon plasma.</b> Populations from Saha balance; ionization rates from a Lotz-type formula; recombination fixed by detailed balance; pressure ionization as a depression of each ionization energy, set as a percentage of the ion-sphere model. In the lifetime plot each circle is one relaxation mode, its area proportional to the mode’s amplitude A<sub>i</sub>; the dashed line is the ion response time 1/ω<sub>pi</sub>. “Coupling” is a dimensionless figure of merit, ∑A<sub>i</sub>·2γ<sub>i</sub>ω<sub>pi</sub>/(γ<sub>i</sub>²+ω<sub>pi</sub>²) with γ<sub>i</sub> = 1/τ<sub>i</sub>, which rewards big fluctuations at the ion frequency. Numbers are indicative only; this is not the code we used for the paper and it omits statistical weights and the full Stewart–Pyatt model.</figcaption>
+    <figcaption><b>A toy carbon plasma.</b> Populations from Saha balance; ionization rates from a Lotz-type formula; recombination fixed by detailed balance; pressure ionization as a depression of each ionization energy, set as a percentage of the ion-sphere model. In the lifetime plot each solid line is one shell (2p, 2s or 1s). We assign every relaxation mode to the shell whose transition dominates its decay rate, then plot the shell’s amplitude-weighted lifetime; dot size shows the shell’s total amplitude, and shells with amplitude below 0.01 are not drawn. The table lists the individual modes. The dotted line is hydrogen at liquid density (0.07 g/cm³): with a single shell it has a single mode. The dashed line is the carbon ion response time 1/ω<sub>pi</sub>. “Coupling” is a dimensionless figure of merit, ∑A<sub>i</sub>·2γ<sub>i</sub>ω<sub>pi</sub>/(γ<sub>i</sub>²+ω<sub>pi</sub>²) with γ<sub>i</sub> = 1/τ<sub>i</sub>, which rewards big fluctuations at the ion frequency. Numbers are indicative only; this is not the code we used for the paper and it omits statistical weights and the full Stewart–Pyatt model.</figcaption>
   </figure>
 </section>
 

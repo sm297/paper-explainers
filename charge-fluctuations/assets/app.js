@@ -65,7 +65,7 @@ function telSim(){
   const ta=Math.pow(10,+$("ta").value), tb=Math.pow(10,+$("tb").value);
   const tc=ta*tb/(ta+tb), dt=tc/20, N=120000, maxLag=80;
   let z=rnd()<tb/(ta+tb)?1:0, t=0, next=expo(z?1/tb:1/ta); const s=new Float32Array(N);
-  const evX=[0],evY=[z]; const win=30*tc;
+  const evX=[0],evY=[z]; const win=Math.max(30*tc,6*Math.max(ta,tb));
   for(let i=0;i<N;i++){ const ti=i*dt; while(next<ti){ z=1-z; t=next; if(t<win){evX.push(t);evY.push(z);} next=t+expo(z?1/tb:1/ta);} s[i]=z; }
   evX.push(win);evY.push(evY[evY.length-1]);
   let mean=0; for(const v of s)mean+=v; mean/=N;
@@ -97,25 +97,26 @@ function overlap(g){let s=0;for(let i=1;i<WS.length;i++){const w=WS[i],dw=WS[i]-
 const GS=logspace(-3,3,121), OV=GS.map(overlap), OVmax=Math.max(...OV);
 const ovEl=(()=>{let s=0;for(let i=1;i<WS.length;i++){const w=WS[i];s+=imIon(w)*imEl(w)*(WS[i]-WS[i-1]);}return s;})();
 function specDraw(){
-  const g=Math.pow(10,+$("gam").value);
+  const g=Math.pow(10,+$("gam").value), aS=+$("amp").value/0.25;
   const xs=logspace(-2,3,400);
   const A=makePlot($("specA"),{x:{min:0.01,max:1000,log:true,label:"ω / ωₚᵢ"},y:{min:0,max:1.12,ticks:[0,0.5,1]},ml:36});
-  A.line(xs.map(w=>[w,imIon(w)]),"c-ion"); A.line(xs.map(w=>[w,imEl(w)]),"c-elec"); A.line(xs.map(w=>[w,imZ(w,g)]),"c-chg",{"stroke-dasharray":"0"});
+  A.line(xs.map(w=>[w,imIon(w)]),"c-ion"); A.line(xs.map(w=>[w,imEl(w)]),"c-elec"); A.line(xs.map(w=>[w,aS*imZ(w,g)]),"c-chg",{"stroke-dasharray":"0"});
   const lab=(x,y,s,c)=>A.text(A.sx(x),A.sy(y),s,"lbl","middle",{style:`fill:var(${c})`});
   lab(1,1.06,"ions","--ion"); lab(OMEGA_E,1.06,"electrons","--elec");
-  const gx=Math.min(Math.max(g,0.03),300); lab(gx,g>0.3&&g<4?0.86:1.06,"charge","--chg");
+  const gx=Math.min(Math.max(g,0.03),300); lab(gx,g>0.3&&g<4?Math.min(0.86,aS+0.06):Math.min(1.06,aS+0.06),"charge","--chg");
   const B=makePlot($("specB"),{x:{min:0.01,max:1000,log:true,label:"ω / ωₚᵢ"},y:{min:1e-4,max:1.2,log:true},ml:44});
-  B.area(xs.map(w=>[w,imIon(w)*imZ(w,g)]),"f-chg",1e-4,{opacity:0.22}); B.line(xs.map(w=>[w,imIon(w)*imZ(w,g)]),"c-chg");
+  B.area(xs.map(w=>[w,aS*imIon(w)*imZ(w,g)]),"f-chg",1e-4,{opacity:0.22}); B.line(xs.map(w=>[w,aS*imIon(w)*imZ(w,g)]),"c-chg");
   B.area(xs.map(w=>[w,imIon(w)*imEl(w)]),"f-elec",1e-4,{opacity:0.18}); B.line(xs.map(w=>[w,imIon(w)*imEl(w)]),"c-elec");
   B.text(B.W-B.m.r-4,B.m.t+14,"ion × charge","lbl","end",{style:"fill:var(--chg)"});
   B.text(B.W-B.m.r-4,B.m.t+30,"ion × electron","lbl","end",{style:"fill:var(--elec)"});
   const C=makePlot($("specC"),{x:{min:0.001,max:1000,log:true,label:"charge fluctuation rate 1/τ, in units of ωₚᵢ"},y:{min:0,max:1.08,ticks:[0,0.5,1],label:"relative coupling"},h:200});
-  C.line(GS.map((x,i)=>[x,OV[i]/OVmax]),"c-chg"); C.vline(1,"c-ion",{"stroke-dasharray":"4 4"});
+  C.line(GS.map((x,i)=>[x,aS*OV[i]/OVmax]),"c-chg"); C.vline(1,"c-ion",{"stroke-dasharray":"4 4"});
   C.text(C.sx(1)+6,C.m.t+30,"1/τ = ωₚᵢ","lbl","start",{style:"fill:var(--ion)"});
-  C.dot(g,overlap(g)/OVmax,6,"f-chg",{stroke:cssv("--panel"),"stroke-width":2});
+  C.dot(g,aS*overlap(g)/OVmax,6,"f-chg",{stroke:cssv("--panel"),"stroke-width":2});
 }
 bindRange("gam","gamO",v=>{const g=Math.pow(10,v);return (g<0.01||g>=100?fmt(g):g.toFixed(g<1?2:1))+" ωₚᵢ";});
 $("gam").addEventListener("input",specDraw);
+bindRange("amp","ampO",v=>v.toFixed(3)); $("amp").addEventListener("input",specDraw);
 
 /* ========== Figure: coth bracket ========== */
 function coth(x){return x>20?1:1/Math.tanh(x);}
@@ -135,7 +136,7 @@ bindRange("te1","te1O",fT); bindRange("ti1","ti1O",fT);
 $("te1").addEventListener("input",cothDraw); $("ti1").addEventListener("input",cothDraw);
 
 /* ========== Carbon model ========== */
-const IP=[11.26,24.38,47.89,64.49,392.09,489.99], QSH=[2,1,2,1,2,1];
+const SHELLCOL={"2p":["#2F7FA8","#6FB7D6"],"2s":["#B97C05","#F0B23A"],"1s":["#C4572C","#F08A5D"]};
 function logE1(x){ if(x<=1){let s=-0.5772156649-Math.log(x),t=1;for(let k=1;k<30;k++){t*=-x/k;s-=t/k;}return Math.log(s);}
   return -x-Math.log(x)+Math.log((x*x+2.334733*x+0.250621)/(x*x+3.330657*x+1.681534)); }
 function logAlpha(I,T,q){const aB=5.29177e-11,me=9.10938e-31,eV=1.602177e-19,Ry=13.6057;
@@ -148,19 +149,22 @@ function jacobi(A){const n=A.length,a=A.map(r=>r.slice()),v=[...Array(n)].map((_
       for(let k=0;k<n;k++){const x=a[p][k],y=a[q][k];a[p][k]=c*x-s*y;a[q][k]=s*x+c*y;}
       for(let k=0;k<n;k++){const x=v[k][p],y=v[k][q];v[k][p]=c*x-s*y;v[k][q]=s*x+c*y;}}}
   return {vals:a.map((r,i)=>r[i]),vecs:v};}
-function solveCarbon(T,rho,f){
-  const ni=rho/12.011*6.02214e23, aI=Math.cbrt(3/(4*Math.PI*ni))/5.29177e-9;
-  const Ieff=IP.map((I,i)=>I-f*1.5*(i+1)*27.2114/aI);
+const CARBON={name:"C",IP:[11.26,24.38,47.89,64.49,392.09,489.99],Q:[2,1,2,1,2,1],mass:12.011,shell:["2p","2p","2s","2s","1s","1s"]};
+const HYDROGEN={name:"H",IP:[13.6057],Q:[1],mass:1.008,shell:["1s"]};
+function solveAtom(S,T,rho,f){
+  const NZ=S.IP.length, NS=NZ+1;
+  const ni=rho/S.mass*6.02214e23, aI=Math.cbrt(3/(4*Math.PI*ni))/5.29177e-9;
+  const Ieff=S.IP.map((I,i)=>I-f*1.5*(i+1)*27.2114/aI);
   let zmin=0; Ieff.forEach((v,i)=>{if(v<=0.5)zmin=i+1;});
-  let Zb=Math.max(zmin,1),p,lne;
+  let Zb=Math.max(Math.min(zmin,NZ),Math.min(1,NZ)),p,lne;
   for(let it=0;it<300;it++){lne=Math.log(Math.max(Zb,0.02)*ni);
-    const lp=new Array(7).fill(-Infinity); lp[zmin]=0;
-    for(let i=zmin;i<6;i++) lp[i+1]=lp[i]+Math.log(2*6.0365e21)+1.5*Math.log(T)-Ieff[i]/T-lne;
+    const lp=new Array(NS).fill(-Infinity); lp[zmin]=0;
+    for(let i=zmin;i<NZ;i++) lp[i+1]=lp[i]+Math.log(2*6.0365e21)+1.5*Math.log(T)-Ieff[i]/T-lne;
     const mx=Math.max(...lp); p=lp.map(v=>Math.exp(v-mx)); const s=p.reduce((a,b)=>a+b); p=p.map(v=>v/s);
     const Zn=p.reduce((a,v,i)=>a+v*i,0); if(Math.abs(Zn-Zb)<1e-8){Zb=Zn;break;} Zb=0.5*Zb+0.5*Zn;}
-  const up=new Array(7).fill(0),dn=new Array(7).fill(0);
-  for(let i=zmin;i<6;i++){up[i]=Math.exp(logAlpha(Math.max(Ieff[i],0.5),T,QSH[i])+lne); dn[i+1]=p[i]>0&&p[i+1]>0?up[i]*p[i]/p[i+1]:0;}
-  const keep=[];for(let i=0;i<7;i++)if(p[i]>1e-9)keep.push(i);
+  const up=new Array(NS).fill(0),dn=new Array(NS).fill(0);
+  for(let i=zmin;i<NZ;i++){up[i]=Math.exp(logAlpha(Math.max(Ieff[i],0.5),T,S.Q[i])+lne); dn[i+1]=p[i]>0&&p[i+1]>0?up[i]*p[i]/p[i+1]:0;}
+  const keep=[];for(let i=0;i<NS;i++)if(p[i]>1e-9)keep.push(i);
   const n=keep.length, Var=p.reduce((a,v,i)=>a+v*(i-Zb)*(i-Zb),0); const comps=[];
   if(n>1){const H=[...Array(n)].map(()=>new Array(n).fill(0));
     for(let a=0;a<n;a++){const i=keep[a];H[a][a]=(a<n-1?up[i]:0)+(a>0?dn[i]:0);
@@ -168,21 +172,27 @@ function solveCarbon(T,rho,f){
     const sc=Math.max(...H.map((r,a)=>r[a]));for(const r of H)for(let b=0;b<n;b++)r[b]/=sc;
     const {vals,vecs}=jacobi(H);
     for(let k=0;k<n;k++){const lam=vals[k]*sc;let s=0;for(let a=0;a<n;a++)s+=keep[a]*Math.sqrt(p[keep[a]])*vecs[a][k];
-      const A=s*s; if(lam>1e-9*sc&&A>1e-4*Math.max(Var,1e-12)&&A>1e-5)comps.push({A,tau:1/lam});}}
+      const A=s*s; if(!(lam>1e-9*sc&&A>1e-4*Math.max(Var,1e-12)&&A>1e-5))continue;
+      // label the mode by the transition that contributes most to its decay rate
+      let best=-1,bi=keep[0];
+      for(let a=0;a<n-1;a++){const i=keep[a],psi0=vecs[a][k]/Math.sqrt(p[i]),psi1=vecs[a+1][k]/Math.sqrt(p[keep[a+1]]);
+        const fl=p[i]*up[i]*(psi1-psi0)**2; if(fl>best){best=fl;bi=i;}}
+      comps.push({A,tau:1/lam,shell:S.shell[bi]});}}
   comps.sort((a,b)=>b.A-a.A);
-  const wpi=1.32e3*Math.max(Zb,0.1)*Math.sqrt(ni/12.011);
+  const wpi=1.32e3*Math.max(Zb,0.1)*Math.sqrt(ni/S.mass);
   const G=comps.reduce((a,c)=>{const g=1/c.tau;return a+c.A*2*g*wpi/(g*g+wpi*wpi);},0);
   return {p,Zb,ni,zmin,up,dn,Var,comps,wpi,G};
 }
+const solveCarbon=(T,rho,f)=>solveAtom(CARBON,T,rho,f);
 const ZCOL=["#7b8794","#3f8fb0","#167A82","#5b9a3c","#B97C05","#c4572c","#BE2F72"];
 const ZCOL_D=["#9aa5b5","#6fb7d6","#4CC3C9","#8dcc68","#F0B23A","#f08a5d","#F06BA8"];
 const isDark=()=>cssv("--bg").toLowerCase()==="#0e141e";
 const zname=z=>z===0?"C":"C"+(z===1?"":sup(z))+"⁺";
 const TS=logspace(0,Math.log10(300),110);
-let sweepKey="",sweep=null;
+let sweepKey="",sweep=null,sweepH=null;
 function carbonDraw(newMC){
   const T=Math.pow(10,+$("cT").value), rho=Math.pow(10,+$("cRho").value), f=+$("cIPD").value;
-  const key=rho+"|"+f; if(key!==sweepKey){sweep=TS.map(t=>solveCarbon(t,rho,f));sweepKey=key;}
+  const key=rho+"|"+f; if(key!==sweepKey){sweep=TS.map(t=>solveCarbon(t,rho,f));sweepH=TS.map(t=>solveAtom(HYDROGEN,t,0.07,f));sweepKey=key;}
   const r=solveCarbon(T,rho,f); const cols=isDark()?ZCOL_D:ZCOL;
   // occupations
   const A=makePlot($("cOcc"),{x:{min:1,max:300,log:true,label:"electron temperature (eV)",ticks:[1,3,10,30,100,300],fmt:v=>String(v)},y:{min:0,max:1.05,ticks:[0,0.5,1],label:"fraction"},ml:46});
@@ -191,12 +201,27 @@ function carbonDraw(newMC){
     if(pts[bi][1]>0.25) A.text(Math.min(Math.max(A.sx(pts[bi][0]),A.m.l+12),A.W-A.m.r-14),Math.max(A.sy(pts[bi][1])-5,A.m.t+14),zname(z),"lbl","middle",{style:`fill:${cols[z]};font-weight:600`});}
   A.vline(T,"c-ink",{"stroke-dasharray":"3 3"});
   // tau scatter
+  // fluctuation modes, one line per shell
   const B=makePlot($("cTau"),{x:{min:1,max:300,log:true,label:"electron temperature (eV)",ticks:[1,3,10,30,100,300],fmt:v=>String(v)},y:{min:0.001,max:1e4,log:true,label:"mode lifetime τᵢ (fs)"},ml:50});
   B.line(TS.map((t,i)=>[t,1e15/sweep[i].wpi]),"c-ion",{"stroke-dasharray":"5 4","stroke-width":1.6});
-  TS.forEach((t,i)=>{if(i%2)return;for(const c of sweep[i].comps){if(c.A<0.01)continue;B.dot(t,c.tau*1e15,Math.max(1.5,7*Math.sqrt(c.A)),"f-chg",{opacity:0.45});}});
-  for(const c of r.comps){if(c.A<0.005)continue;B.dot(T,c.tau*1e15,Math.max(2.5,7*Math.sqrt(c.A)),"f-ink",{"fill-opacity":0.9,stroke:cssv("--panel"),"stroke-width":1.5});}
+  B.text(B.W-B.m.r-4,B.sy(1e15/sweep[sweep.length-1].wpi)-6,"1/ωₚᵢ (carbon)","lbl","end",{style:"fill:var(--ion)"});
+  // combine a shell’s modes: total amplitude and amplitude-weighted (log-mean) lifetime
+  const shellAgg=(cs,sh)=>{let A=0,L=0;for(const c of cs)if(c.shell===sh){A+=c.A;L+=c.A*Math.log(c.tau);}return A>0?{A,tau:Math.exp(L/A)}:null;};
+  const shellCol=sh=>sh==="H"?cssv("--ink"):SHELLCOL[sh][isDark()?1:0];
+  const drawShell=(sw,sh,label,dash)=>{
+    const pts=TS.map((t,i)=>{const g=shellAgg(sw[i].comps,sh==="H"?"1s":sh);return g&&g.A>=0.01?{t,tau:g.tau*1e15,A:g.A}:null;});
+    let seg=[],bestP=null; const flush=()=>{if(seg.length>1)B.line(seg,"",{stroke:shellCol(sh),"stroke-width":2.4,"stroke-dasharray":dash||"0"});seg=[];};
+    pts.forEach((q,i)=>{if(!q){flush();return;} seg.push([q.t,q.tau]); if(!bestP||q.A>bestP.A)bestP=q;
+      if(!dash&&i%3===0)B.dot(q.t,q.tau,Math.max(1.5,7*Math.sqrt(q.A)),"",{fill:shellCol(sh),"fill-opacity":0.35});});
+    flush();
+    const first=pts.find(q=>q);
+    if(sh==="H"&&first)B.text(B.sx(first.t)+8,Math.max(B.sy(first.tau)-8,B.m.t+12),label,"lbl","start",{style:`fill:${shellCol(sh)};font-weight:600`});
+    else if(bestP)B.text(Math.min(Math.max(B.sx(bestP.t),B.m.l+20),B.W-B.m.r-24),Math.max(B.sy(bestP.tau)-10,B.m.t+12),label,"lbl","middle",{style:`fill:${shellCol(sh)};font-weight:600`});
+  };
+  drawShell(sweepH,"H","H (one shell)","2 4");
+  for(const sh of ["2p","2s","1s"]) drawShell(sweep,sh,sh);
+  for(const sh of ["2p","2s","1s"]){const g=shellAgg(r.comps,sh);if(!g||g.A<0.01)continue;B.dot(T,g.tau*1e15,Math.max(2.5,7*Math.sqrt(g.A)),"",{fill:shellCol(sh),stroke:cssv("--ink"),"stroke-width":1.5});}
   B.vline(T,"c-ink",{"stroke-dasharray":"3 3"});
-  B.text(B.W-B.m.r-4,B.sy(1e15/sweep[sweep.length-1].wpi)-6,"1/ωₚᵢ","lbl","end",{style:"fill:var(--ion)"});
   // coupling
   const Gmax=Math.max(0.05,...sweep.map(s=>s.G));
   const C=makePlot($("cG"),{x:{min:1,max:300,log:true,label:"electron temperature (eV)",ticks:[1,3,10,30,100,300],fmt:v=>String(v)},y:{min:0,max:Gmax*1.12,label:"coupling (arb.)"},ml:46});
@@ -212,8 +237,8 @@ function carbonDraw(newMC){
   $("cZ").textContent=r.Zb.toFixed(2); $("cV").textContent=r.Var.toFixed(3); $("cW").textContent=fmtT(1e15/r.wpi);
   $("cP").textContent=r.zmin?"C⁰ to "+zname(r.zmin-1)+" (outer "+r.zmin+" e⁻ unbound)":"none";
   const tab=$("cTab"); const rows=r.comps.filter(c=>c.A>=0.005).slice(0,4);
-  tab.innerHTML="<thead><tr><th>Mode</th><th>Amplitude Aᵢ</th><th>Lifetime τᵢ</th><th>τᵢ ωₚᵢ</th></tr></thead><tbody>"+
-    (rows.length?rows.map((c,i)=>`<tr><td>${i+1}</td><td>${c.A.toFixed(3)}</td><td>${fmtT(c.tau*1e15)}</td><td>${fmt(c.tau*r.wpi)}</td></tr>`).join(""):"<tr><td colspan=4>No significant fluctuations at this temperature.</td></tr>")+"</tbody>";
+  tab.innerHTML="<thead><tr><th>Mode</th><th>Shell</th><th>Amplitude Aᵢ</th><th>Lifetime τᵢ</th><th>τᵢ ωₚᵢ</th></tr></thead><tbody>"+
+    (rows.length?rows.map((c,i)=>`<tr><td>${i+1}</td><td>${c.shell}</td><td>${c.A.toFixed(3)}</td><td>${fmtT(c.tau*1e15)}</td><td>${fmt(c.tau*r.wpi)}</td></tr>`).join(""):"<tr><td colspan=5>No significant fluctuations at this temperature.</td></tr>")+"</tbody>";
 }
 function gillespie(r){
   const main=r.comps.length?r.comps[0].tau:1e-15; const win=40*main;
