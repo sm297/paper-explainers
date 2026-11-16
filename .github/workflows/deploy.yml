@@ -1,0 +1,55 @@
+# Unpacks any uploaded .zip, rebuilds the papers list from each
+# folder's card.html, commits the result, and publishes the site.
+name: Build and deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack uploaded zip files
+        run: |
+          shopt -s nullglob
+          for z in *.zip; do
+            echo "Unpacking $z"
+            unzip -o "$z" -x '.github/*' '__MACOSX/*' '*.DS_Store'
+            git rm -q "$z"
+          done
+
+      - name: Build papers list
+        run: |
+          if [ -f scripts/build_index.py ]; then python3 scripts/build_index.py; fi
+
+      - name: Commit changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Unpack uploads and rebuild papers list"
+          git push
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
